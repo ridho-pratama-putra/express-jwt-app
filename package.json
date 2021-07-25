@@ -4,8 +4,8 @@
   "description": "jwt lesson",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js",
+    "test": "NODE_ENV=test jest --watchAll=false --detectOpenHandles",
+    "dev": "nodemon app.js",
     "devAuth": "nodemon authServer.js"
   },
   "author": "",
@@ -16,6 +16,11 @@
     "jsonwebtoken": "^8.5.1"
   },
   "devDependencies": {
-    "nodemon": "^2.0.12"
+    "jest": "^27.0.6",
+    "nodemon": "^2.0.12",
+    "supertest": "^6.1.4"
+  },
+  "jest": {
+    "verbose": true
   }
 }

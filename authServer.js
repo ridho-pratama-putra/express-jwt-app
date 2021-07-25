@@ -1,7 +1,6 @@
 require('dotenv').config()
 const express = require('express')
 const app = express()
-const port = 4000
 const jwt = require('jsonwebtoken')
 
 app.use(express.json())
@@ -38,6 +37,4 @@ app.post('/login', (req, res) => {
     res.json({ accessToken, refreshToken })
 })
 
-app.listen(port, () => {
-    console.log(`Auth server app listening at http://localhost:${port}`)
-})
+module.exports = app
