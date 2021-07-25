@@ -36,14 +36,6 @@ app.get('/posts', authenticateUser, (req, res) => {
     )
 })
 
-app.post('/login', (req, res) => {
-    // authenticate user
-    const  { username } = req.body
-    const user = { name: username }
-    const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET)
-    res.json({ accessToken })
-})
-
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`)
+    console.log(`Server app listening at http://localhost:${port}`)
 })
