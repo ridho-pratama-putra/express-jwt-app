@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "NODE_ENV=test jest --watchAll=false --detectOpenHandles",
-    "dev": "nodemon app.js",
-    "devAuth": "nodemon authServer.js"
+    "devApp": "nodemon app.js",
+    "devAuth": "nodemon auth.js"
   },
   "author": "",
   "license": "ISC",
