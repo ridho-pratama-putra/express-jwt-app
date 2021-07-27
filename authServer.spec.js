@@ -36,4 +36,14 @@ describe('AuthServer', () => {
                 .expect(403)
         })
     })
+
+    describe('/logout', () => {
+        it('return 204 after delete refresh token', async () => {
+            await request(app)
+                .delete('/logout').send({
+                    token: 'fake invalid token'
+                })
+                .expect(204)
+        })
+    })
 })
