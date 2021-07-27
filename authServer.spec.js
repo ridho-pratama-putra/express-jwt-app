@@ -19,4 +19,21 @@ describe('AuthServer', () => {
                 })
         })
     })
+
+    describe('/token', () => {
+        it('return 401 when no refresh token listed', async () => {
+            await request(app)
+                .post('/token').send({
+                    token: null
+                })
+                .expect(401)
+        })
+        it('return 403 when no refresh token listed', async () => {
+            await request(app)
+                .post('/token').send({
+                    token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+                })
+                .expect(403)
+        })
+    })
 })
