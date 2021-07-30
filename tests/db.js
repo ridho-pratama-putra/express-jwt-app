@@ -4,7 +4,7 @@ let mongo
 /**
  * Connect to the in-memory database.
  */
-export const connect = async () => {
+module.exports.connect = async () => {
   mongo = await MongoMemoryServer.create();
   const uri = mongo.getUri();
 
