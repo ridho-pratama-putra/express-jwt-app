@@ -6,7 +6,9 @@
   "scripts": {
     "test": "NODE_ENV=test jest --watchAll=false --detectOpenHandles",
     "devApp": "nodemon app.js",
-    "devAuth": "nodemon auth.js"
+    "devAuth": "nodemon auth.js",
+    "lint": "eslint . --ext .js",
+    "lint:fix": "npm run lint -- --fix"
   },
   "author": "",
   "license": "ISC",
@@ -29,5 +31,6 @@
   },
   "jest": {
     "verbose": true
-  }
+  },
+  "eslintIgnore": ["*.spec.js"]
 }
