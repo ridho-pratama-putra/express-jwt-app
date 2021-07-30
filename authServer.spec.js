@@ -1,6 +1,7 @@
 const request = require('supertest');
 const app = require('./authServer'); // the express server
 const db = require('./tests/db');
+const User = require('./models/user')
 
 describe('AuthServer', () => {
   beforeAll(async () => await db.connect())
@@ -66,5 +67,35 @@ describe('AuthServer', () => {
         expect(res.body.status.code).toEqual('06')
         expect(res.body.status.description).toEqual('failed to crate account')
     });
+
+    it('should return 400 failed to create account when record already exist', async () => {
+      const user = new User({
+        username: 'userName',
+        email: 'email@emal.com',
+        password: 'password'
+      })
+      await user.save()
+      const res = await request(app)
+        .post('/register').send({
+          username: 'userName',
+          email: 'email@emal.com',
+          password: 'password'
+        })
+        .expect(400)
+      expect(res.body.status.code).toEqual('06')
+      expect(res.body.status.description).toEqual('failed to crate account')
+    });
+  });
+
+  it('should return 201 when success create record', async () => {
+    const res = await request(app)
+      .post('/register').send({
+        username: 'userName',
+        email: 'email@emal.com',
+        password: 'password'
+      })
+      .expect(201)
+    expect(res.body.status.code).toEqual('00')
+    expect(res.body.status.description).toEqual('Success')
   });
 });
