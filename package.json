@@ -26,11 +26,14 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "jest": "^27.0.6",
+    "mongodb-memory-server": "^7.3.4",
     "nodemon": "^2.0.12",
     "supertest": "^6.1.4"
   },
   "jest": {
     "verbose": true
   },
-  "eslintIgnore": ["*.spec.js"]
+  "eslintIgnore": [
+    "*.spec.js"
+  ]
 }

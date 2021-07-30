@@ -1,10 +1,13 @@
 const request = require('supertest');
 const app = require('./authServer'); // the express server
+const db = require('./tests/db');
 
 describe('AuthServer', () => {
-
-  afterEach(() => {
+  beforeAll(async () => await db.connect())
+  afterAll(async () => await db.closeDatabase())
+  afterEach(async () => {
     jest.restoreAllMocks()
+    await db.clearDatabase()
   })
 
   describe('/login', () => {
