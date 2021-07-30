@@ -3,6 +3,7 @@ const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
+const responseFactory = require('./models/response')
 
 app.use(express.json())
 let refreshTokens = []
@@ -57,20 +58,11 @@ app.post('/register', async (req, res) => {
   await user.save((err, doc) => {
     if (err) {
       console.log(err)
-      res.status(400).json({
-        status: '06',
-        description: 'failed to crate account',
-      })
+      res.status(400).json(responseFactory({code:'06', description: 'failed to crate account'}, [{err}]))
       return
     }
 
-    res.status(201).json({
-      status: '00',
-      description: 'success crate account',
-      response: {
-        doc,
-      },
-    })
+    res.status(201).json(responseFactory({code:'00', description: 'Success'}, [doc]))
   })
 })
 
