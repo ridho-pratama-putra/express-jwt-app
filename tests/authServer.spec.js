@@ -1,7 +1,7 @@
 const request = require('supertest');
-const app = require('./authServer'); // the express server
-const db = require('./tests/db');
-const User = require('./models/user')
+const app = require('../src/authServer'); // the express server
+const db = require('./db');
+const User = require('../src/models/user')
 
 describe('AuthServer', () => {
   beforeAll(async () => await db.connect())

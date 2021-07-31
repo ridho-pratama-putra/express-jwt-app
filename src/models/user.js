@@ -1,16 +1,9 @@
 const mongoose = require('mongoose')
 const bcrypt = require('bcrypt')
 const Schema = mongoose.Schema
+const Authentication = require('./authentication')
 const SALT_WORK_FACTOR = 10
 
-const TokenSchema = new  Schema({
-  token: {
-    type: String,
-  },
-  refreshToken: {
-    type: String,
-  },
-})
 
 const UserSchema = new Schema({
   username: {
@@ -18,6 +11,7 @@ const UserSchema = new Schema({
     required: true,
     minlength: 5,
     maxlength: 50,
+    unique: true,
   },
   email: {
     type: String,
@@ -32,7 +26,9 @@ const UserSchema = new Schema({
     minlength: 5,
     maxlength: 1024,
   },
-  authentication: TokenSchema,
+  authentication: {
+    type: Authentication
+  },
 })
 
 UserSchema.pre('save', function (next) {
@@ -56,8 +52,11 @@ UserSchema.pre('save', function (next) {
   })
 })
 
-UserSchema.methods.comparePassword = function (password) {
-  return bcrypt.compareSync(password, this.hash_password)
+UserSchema.methods.comparePassword = function (password, cb) {
+  return bcrypt.compare(password, this.password, function(err, isMatch) {
+    if (err) return cb(err);
+    cb(null, isMatch);
+  });
 }
 
 module.exports = mongoose.model('User', UserSchema)
