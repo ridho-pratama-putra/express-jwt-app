@@ -13,18 +13,23 @@ describe('AuthServer', () => {
 
   describe('/login', () => {
     it('should return array of object contain token and refresh token', async () => {
+      const user = new User({ username: 'user A', email: 'email@emal.com', password: 'userA' })
+      await user.save()
+
       await request(app)
         .post('/login').send({
-          username: 'user A'
+          username: 'user A',
+          password: 'userA'
         }).expect('Content-Type', 'application/json; charset=utf-8')
         .expect(200)
         .then((response) => {
-          expect(response.body).toEqual(
+          expect(response.body).toHaveProperty('result') // true
+          expect(response.body.result).toStrictEqual(expect.arrayContaining([
             expect.objectContaining({
               accessToken: expect.any(String),
               refreshToken: expect.any(String)
             })
-          );
+          ]));
         });
     });
   });
@@ -42,7 +47,7 @@ describe('AuthServer', () => {
         .post('/token').send({
           token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
-        .expect(403);
+        .expect(401);
     });
   });
 
@@ -52,7 +57,7 @@ describe('AuthServer', () => {
         .delete('/logout').send({
           token: 'fake invalid token'
         })
-        .expect(204);
+        .expect(401);
     });
   });
 
