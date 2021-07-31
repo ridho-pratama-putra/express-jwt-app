@@ -10,25 +10,50 @@ app.use(express.json())
 let refreshTokens = []
 
 app.post('/token', (req, res) => {
-  const refreshToken = req.body.token
+  const refreshToken = req.body.refreshToken
   if (refreshToken == null) {
     return res.sendStatus(401)
   }
-  if (!refreshTokens.includes(refreshToken)) {
-    return res.sendStatus(403)
-  }
-  jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, user) => {
-    if (err) {
-      return res.sendStatus(403)
+
+  User.findOne({ "authentication.refreshToken": refreshToken }, (err, doc)=>{
+    if (err || doc === null) {
+      return res.sendStatus(401)
     }
-    const accessToken = generateAccessTokenWithExipration({ name: user.name, })
-    res.json({ accessToken, })
+
+    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, username) => {
+      if (err) {
+        return res.sendStatus(401)
+      }
+      const accessToken = generateAccessTokenWithExipration(username)
+      res.json({ accessToken, })
+    })
   })
 })
 
 app.delete('/logout', (req, res) => {
-  refreshTokens = refreshTokens.filter(token => token !== req.body.token)
-  res.sendStatus(204)
+  User.findOne({ "authentication.token": req.body.token }, (err, doc)=>{
+    if (err || doc === null) {
+      return res.sendStatus(401)
+    }
+
+    doc.authentication = {
+      token: null,
+      refreshToken: null,
+    }
+    doc.save( (err, doc) => {
+      if (err) {
+        console.log(err)
+        return res.status(400).json(responseFactory({
+          code: '06',
+          description: 'Failed to logout'
+        }, [{}]))
+      }
+      return res.status(204).json(responseFactory({
+        code: '00',
+        description: 'Success'
+      }, [{}]))
+    })
+  })
 })
 
 function generateAccessTokenWithExipration (user) {
@@ -58,13 +83,8 @@ app.post('/login', (req, res) => {
         }, [{}]))
       }
 
-      const userForJwt = {
-        username, password
-      }
-
-      const accessToken = generateAccessTokenWithExipration(userForJwt)
-      const refreshToken = jwt.sign(userForJwt, process.env.REFRESH_ACCESS_TOKEN_SECRET)
-
+      const accessToken = generateAccessTokenWithExipration({username})
+      const refreshToken = jwt.sign({username}, process.env.REFRESH_ACCESS_TOKEN_SECRET)
       doc.authentication = {
         token: accessToken,
         refreshToken,
