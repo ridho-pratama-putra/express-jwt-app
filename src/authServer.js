@@ -4,7 +4,7 @@ const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
-const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED } = require('./constants/HttpStatus')
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, } = require('./constants/HttpStatus')
 
 app.use(express.json())
 
@@ -14,7 +14,7 @@ app.post('/token', (req, res) => {
     return res.sendStatus(401)
   }
 
-  User.findOne({ "authentication.refreshToken": refreshToken }, (err, doc)=>{
+  User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
     if (err || doc === null) {
       return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
     }
@@ -30,7 +30,7 @@ app.post('/token', (req, res) => {
 })
 
 app.delete('/logout', (req, res) => {
-  User.findOne({ "authentication.token": req.body.token }, (err, doc)=>{
+  User.findOne({ 'authentication.token': req.body.token, }, (err, doc) => {
     if (err || doc === null) {
       return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
     }
@@ -39,17 +39,17 @@ app.delete('/logout', (req, res) => {
       token: null,
       refreshToken: null,
     }
-    doc.save( (err, doc) => {
+    doc.save((err, doc) => {
       if (err) {
         console.log(err)
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
-          description: 'Failed to logout'
+          description: 'Failed to logout',
         }, [{}]))
       }
       return res.status(HTTP_STATUS_OK).json(responseFactory({
         code: '00',
-        description: 'Logout success'
+        description: 'Logout success',
       }, [{}]))
     })
   })
@@ -60,10 +60,9 @@ function generateAccessTokenWithExipration (user) {
 }
 
 app.post('/login', (req, res) => {
-  const { username, password } = req.body
+  const { username, password, } = req.body
 
-  User.findOne({ username }, (err, doc) => {
-
+  User.findOne({ username, }, (err, doc) => {
     if (err) {
       console.log(err)
       res.status(HTTP_STATUS_UNAUTHORIZED)
@@ -71,37 +70,39 @@ app.post('/login', (req, res) => {
     }
 
     doc.comparePassword(password, (err, isMatch) => {
-      if (err) return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-        code: '06',
-        description: 'failed to login'
-      }, [{ err }]))
+      if (err) {
+        return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
+          code: '06',
+          description: 'failed to login',
+        }, [{ err, }]))
+      }
       if (!isMatch) {
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
-          description: 'Password not match'
+          description: 'Password not match',
         }, [{}]))
       }
 
-      const accessToken = generateAccessTokenWithExipration({username})
-      const refreshToken = jwt.sign({username}, process.env.REFRESH_ACCESS_TOKEN_SECRET)
+      const accessToken = generateAccessTokenWithExipration({ username, })
+      const refreshToken = jwt.sign({ username, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
       doc.authentication = {
         token: accessToken,
         refreshToken,
       }
-      doc.save( (err, doc) => {
+      doc.save((err, doc) => {
         if (err) {
           console.log(err)
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
-            description: 'Failed to update token'
+            description: 'Failed to update token',
           }, [{}]))
         }
         res.status(HTTP_STATUS_OK).json(responseFactory({
           code: '00',
-          description: 'Success'
+          description: 'Success',
         }, [{
           accessToken,
-          refreshToken
+          refreshToken,
         }]))
       })
     })
@@ -120,14 +121,14 @@ app.post('/register', async (req, res) => {
       console.log(err)
       res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
         code: '06',
-        description: 'failed to crate account'
-      }, [{ err }]))
+        description: 'failed to crate account',
+      }, [{ err, }]))
       return
     }
 
     res.status(HTTP_STATUS_CREATED).json(responseFactory({
       code: '00',
-      description: 'Success'
+      description: 'Success',
     }, [doc]))
   })
 })

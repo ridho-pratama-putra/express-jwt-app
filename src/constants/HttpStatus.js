@@ -8,7 +8,7 @@ const httpStatusConstants = {
   HTTP_STATUS_NOT_FOUND: 404,
   HTTP_STATUS_CONFLICT: 409,
   HTTP_STATUS_INTERNAL_SERVER_ERROR: 500,
-  HTTP_STATUS_SERVICE_UNAVAILABLE: 503
-};
+  HTTP_STATUS_SERVICE_UNAVAILABLE: 503,
+}
 
-module.exports = httpStatusConstants;
+module.exports = httpStatusConstants
