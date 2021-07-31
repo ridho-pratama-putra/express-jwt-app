@@ -3,6 +3,15 @@ const bcrypt = require('bcrypt')
 const Schema = mongoose.Schema
 const SALT_WORK_FACTOR = 10
 
+const TokenSchema = new  Schema({
+  token: {
+    type: String,
+  },
+  refreshToken: {
+    type: String,
+  },
+})
+
 const UserSchema = new Schema({
   username: {
     type: String,
@@ -23,6 +32,7 @@ const UserSchema = new Schema({
     minlength: 5,
     maxlength: 1024,
   },
+  authentication: TokenSchema,
 })
 
 UserSchema.pre('save', function (next) {
