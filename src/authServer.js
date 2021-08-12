@@ -41,7 +41,7 @@ app.delete('/logout', (req, res) => {
     }
     doc.save((err, doc) => {
       if (err) {
-        console.log(err)
+        // console.log(err)
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
           description: 'Failed to logout',
@@ -64,7 +64,7 @@ app.post('/login', (req, res) => {
 
   User.findOne({ username, }, (err, doc) => {
     if (err) {
-      console.log(err)
+      // console.log(err)
       res.status(HTTP_STATUS_UNAUTHORIZED)
       return
     }
@@ -91,7 +91,7 @@ app.post('/login', (req, res) => {
       }
       doc.save((err, doc) => {
         if (err) {
-          console.log(err)
+          // console.log(err)
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
             description: 'Failed to update token',
@@ -118,7 +118,7 @@ app.post('/register', async (req, res) => {
 
   await user.save((err, doc) => {
     if (err) {
-      console.log(err)
+      // console.log(err)
       res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
         code: '06',
         description: 'failed to crate account',
