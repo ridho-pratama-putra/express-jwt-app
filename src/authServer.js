@@ -11,7 +11,7 @@ app.use(express.json())
 app.post('/token', (req, res) => {
   const refreshToken = req.body.refreshToken
   if (refreshToken == null) {
-    return res.sendStatus(401)
+    return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
   }
 
   User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
