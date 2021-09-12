@@ -5,6 +5,59 @@ const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, } = require('./constants/HttpStatus')
+const passport = require('passport')
+const GoogleStrategy = require('passport-google-oauth20').Strategy
+const cookieSession = require('cookie-session')
+
+passport.serializeUser(function (user, done) {
+  console.log('serialize user ', user)
+  done(null, user.id)
+})
+
+passport.deserializeUser(function (userId, done) {
+  console.log('deserialize user ', userId)
+  User.findById(userId).then(user => {
+    done(null, user)
+  })
+})
+
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.CALLBACK_URL,
+},
+function (accessToken, refreshToken, profile, done) {
+  // passport callback function
+  // check if user already exists in our db with the given profile ID
+  User.findOne({ googleId: profile.id, }).then((currentUser) => {
+    // console.log('currentUser', currentUser)
+    // console.log('accessToken', accessToken)
+    // console.log('refreshToken', refreshToken)
+    // console.log('profile', profile)
+    if (currentUser) {
+      // if we already have a record with the given profile ID
+      done(null, currentUser)
+    } else {
+      // if not, create a new user
+      new User({
+        displayName: profile.displayName,
+        googleId: profile.id,
+        email: profile.emails[0].value,
+        authentication: {
+          accessToken: accessToken,
+        },
+      }).save().then((newUser) => {
+        done(null, newUser)
+      }).catch(err => {
+        res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
+          code: '06',
+          description: 'failed to crate account',
+        }, [{ err, }]))
+      });
+    }
+  })
+}
+))
 
 app.use(express.json())
 
@@ -133,4 +186,20 @@ app.post('/register', async (req, res) => {
   })
 })
 
+app.use(cookieSession({
+  // milliseconds of a day
+  maxAge: 24 * 60 * 60 * 1000,
+  keys: [process.env.GOOGLE_COOKIE_KEY],
+}))
+app.use(passport.initialize())
+app.use(passport.session())
+
+app.get('/auth/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+}))
+
+app.get('/auth/google/redirect', passport.authenticate('google'), (req, res) => {
+  console.log(req.user)
+  res.send('you reached the redirect URI')
+})
 module.exports = app

@@ -7,21 +7,28 @@ const SALT_WORK_FACTOR = 10
 const UserSchema = new Schema({
   username: {
     type: String,
-    required: true,
+    // required: true,
     minlength: 5,
     maxlength: 50,
     unique: true,
   },
+  displayName: {
+    type: String,
+  },
+  googleId: {
+    type: String,
+    unique: true,
+  },
   email: {
     type: String,
-    required: true,
+    // required: true,
     minlength: 5,
     maxlength: 255,
     unique: true,
   },
   password: {
     type: String,
-    required: true,
+    // required: true,
     minlength: 5,
     maxlength: 1024,
   },

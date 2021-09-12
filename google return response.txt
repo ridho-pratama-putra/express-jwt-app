@@ -1,0 +1,40 @@
+currentUser {
+  _id: 613c5418811420833b1ddafc,
+  googleId: '110227216870805847628',
+  __v: 0
+}
+accessToken ya29.a0ARrdaM-Ma9khPSsqld95kaV32M9m0LDotXhXolf5IAAoknRL3-GwzUdohAcnauVC61CuZVtElgFGLVfo_wtp8lP_FF7xKgazr7VnxbtuUcC2OduL4TrjP89_ye1cr2OGV04fWD8LaFc_JeE8ILqOw5XjvLtx
+refreshToken undefined
+profile {
+  id: '110227216870805847628',
+  displayName: 'Ridho Pratama',
+  name: { familyName: 'Pratama', givenName: 'Ridho' },
+  emails: [ { value: 'ridhopratamavd@gmail.com', verified: true } ],
+  photos: [
+    {
+      value: 'https://lh3.googleusercontent.com/a-/AOh14Gg-qGC5UoduYqN9W6ol13Cumk5IRoRGp-5Pw6YMLQ=s96-c'
+    }
+  ],
+  provider: 'google',
+  _raw: '{\n' +
+    '  "sub": "110227216870805847628",\n' +
+    '  "name": "Ridho Pratama",\n' +
+    '  "given_name": "Ridho",\n' +
+    '  "family_name": "Pratama",\n' +
+    '  "picture": "https://lh3.googleusercontent.com/a-/AOh14Gg-qGC5UoduYqN9W6ol13Cumk5IRoRGp-5Pw6YMLQ\\u003ds96-c",\n' +
+    '  "email": "ridhopratamavd@gmail.com",\n' +
+    '  "email_verified": true,\n' +
+    '  "locale": "en"\n' +
+    '}',
+  _json: {
+    sub: '110227216870805847628',
+    name: 'Ridho Pratama',
+    given_name: 'Ridho',
+    family_name: 'Pratama',
+    picture: 'https://lh3.googleusercontent.com/a-/AOh14Gg-qGC5UoduYqN9W6ol13Cumk5IRoRGp-5Pw6YMLQ=s96-c',
+    email: 'ridhopratamavd@gmail.com',
+    email_verified: true,
+    locale: 'en'
+  }
+}
+    
