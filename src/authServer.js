@@ -7,7 +7,6 @@ const responseFactory = require('./models/response')
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_CONFLICT, } = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
-const cookieSession = require('cookie-session')
 
 // function to persist user data (after successful authentication) into session. called after using strategy
 passport.serializeUser(function (user, done) {
@@ -47,9 +46,6 @@ passport.use(new GoogleStrategy({
           displayName: profile.displayName,
           googleId: profile.id,
           email: profile.emails[0].value,
-          authentication: {
-            accessToken: accessToken,
-          },
         }).save().then((newUser) => {
           done(null, newUser)
         })
@@ -107,8 +103,8 @@ app.delete('/logout', (req, res) => {
   })
 })
 
-function generateAccessTokenWithExipration (user) {
-  return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '100s', })
+function generateAccessTokenWithExipration (email) {
+  return jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '100s', })
 }
 
 app.post('/login', (req, res) => {
@@ -184,11 +180,6 @@ app.post('/register', async (req, res) => {
   })
 })
 
-app.use(cookieSession({
-  // milliseconds of a day
-  maxAge: 24 * 60 * 60 * 1000,
-  keys: [process.env.GOOGLE_COOKIE_KEY],
-}))
 app.use(passport.initialize())
 app.use(passport.session())
 
@@ -203,11 +194,31 @@ app.get('/failed', (req, res) => {
   }, [{ }]))
 })
 
-app.get('/auth/google/redirect', passport.authenticate('google', {failureRedirect: '/failed'}), (req, res) => {
-  res.status(HTTP_STATUS_OK).json(responseFactory({
-    code: '00',
-    description: 'Success',
-  }, [{
-  }]))
+app.get('/auth/google/redirect', passport.authenticate('google', {session: false}), (req, res) => {
+  const { user } = req
+  const { email } = user
+  // generate jwt as log in process
+  const accessToken = generateAccessTokenWithExipration({ email, })
+  const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
+  user.authentication =  {
+    token: accessToken,
+    refreshToken,
+  }
+  user.save((err, doc) => {
+    if (err) {
+      // console.log(err)
+      return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
+        code: '06',
+        description: 'Failed to update token',
+      }, [{}]))
+    }
+    res.status(HTTP_STATUS_OK).json(responseFactory({
+      code: '00',
+      description: 'Success',
+    }, [{
+      accessToken,
+      refreshToken,
+    }]))
+  })
 })
 module.exports = app
