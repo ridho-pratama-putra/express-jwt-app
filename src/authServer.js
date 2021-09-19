@@ -4,16 +4,18 @@ const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
-const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, } = require('./constants/HttpStatus')
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_CONFLICT, } = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cookieSession = require('cookie-session')
 
+// function to persist user data (after successful authentication) into session. called after using strategy
 passport.serializeUser(function (user, done) {
   console.log('serialize user ', user)
   done(null, user.id)
 })
 
+// is used to retrieve user data from session.
 passport.deserializeUser(function (userId, done) {
   console.log('deserialize user ', userId)
   User.findById(userId).then(user => {
@@ -22,41 +24,38 @@ passport.deserializeUser(function (userId, done) {
 })
 
 passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL,
-},
-function (accessToken, refreshToken, profile, done) {
-  // passport callback function
-  // check if user already exists in our db with the given profile ID
-  User.findOne({ googleId: profile.id, }).then((currentUser) => {
-    // console.log('currentUser', currentUser)
-    // console.log('accessToken', accessToken)
-    // console.log('refreshToken', refreshToken)
-    // console.log('profile', profile)
-    if (currentUser) {
-      // if we already have a record with the given profile ID
-      done(null, currentUser)
-    } else {
-      // if not, create a new user
-      new User({
-        displayName: profile.displayName,
-        googleId: profile.id,
-        email: profile.emails[0].value,
-        authentication: {
-          accessToken: accessToken,
-        },
-      }).save().then((newUser) => {
-        done(null, newUser)
-      }).catch(err => {
-        res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-          code: '06',
-          description: 'failed to crate account',
-        }, [{ err, }]))
-      });
-    }
-  })
-}
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL,
+  },
+  function (accessToken, refreshToken, profile, done) {
+    // passport callback function
+    // check if user already exists in our db with the given profile ID
+    console.log('using GoogleStrategy :: ')
+    User.findOne({
+      $or: [
+        { googleId: profile.id, },
+        { email: profile.emails[0].value }
+      ]
+    }).then((currentUser) => {
+      if (currentUser && currentUser.googleId) { // registered with google account
+        done(null, currentUser)
+      } else if (currentUser && currentUser.email) { // registered manually
+        done(null, false, { message: 'Seems already registered without google account, Do you want to reset your password?' })
+      } else { // if not, create a new user
+        new User({
+          displayName: profile.displayName,
+          googleId: profile.id,
+          email: profile.emails[0].value,
+          authentication: {
+            accessToken: accessToken,
+          },
+        }).save().then((newUser) => {
+          done(null, newUser)
+        })
+      }
+    })
+  }
 ))
 
 app.use(express.json())
@@ -198,8 +197,18 @@ app.get('/auth/google', passport.authenticate('google', {
   scope: ['profile', 'email'],
 }))
 
-app.get('/auth/google/redirect', passport.authenticate('google'), (req, res) => {
-  console.log(req.user)
-  res.send('you reached the redirect URI')
+app.get('/failed', (req, res) => {
+  res.status(HTTP_STATUS_CONFLICT).json(responseFactory({
+    code: '06',
+    description: 'failed to log in',
+  }, [{ }]))
+})
+
+app.get('/auth/google/redirect', passport.authenticate('google', {failureRedirect: '/failed'}), (req, res) => {
+  res.status(HTTP_STATUS_OK).json(responseFactory({
+    code: '00',
+    description: 'Success',
+  }, [{
+  }]))
 })
 module.exports = app
