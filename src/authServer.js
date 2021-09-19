@@ -8,20 +8,8 @@ const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATU
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 
-// function to persist user data (after successful authentication) into session. called after using strategy
-passport.serializeUser(function (user, done) {
-  console.log('serialize user ', user)
-  done(null, user.id)
-})
-
-// is used to retrieve user data from session.
-passport.deserializeUser(function (userId, done) {
-  console.log('deserialize user ', userId)
-  User.findById(userId).then(user => {
-    done(null, user)
-  })
-})
-
+app.use(express.json())
+app.use(passport.initialize())
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -53,8 +41,6 @@ passport.use(new GoogleStrategy({
     })
   }
 ))
-
-app.use(express.json())
 
 app.post('/token', (req, res) => {
   const refreshToken = req.body.refreshToken
@@ -180,9 +166,6 @@ app.post('/register', async (req, res) => {
   })
 })
 
-app.use(passport.initialize())
-app.use(passport.session())
-
 app.get('/auth/google', passport.authenticate('google', {
   scope: ['profile', 'email'],
 }))
@@ -221,4 +204,5 @@ app.get('/auth/google/redirect', passport.authenticate('google', {session: false
     }]))
   })
 })
+
 module.exports = app
