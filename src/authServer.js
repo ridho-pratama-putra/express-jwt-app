@@ -71,11 +71,11 @@ app.post('/token', (req, res) => {
       return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, username) => {
+    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, email) => {
       if (err) {
         return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
       }
-      const accessToken = generateAccessTokenWithExipration(username)
+      const accessToken = generateAccessTokenWithExipration(email)
       res.json({ accessToken, })
     })
   })
@@ -112,9 +112,9 @@ function generateAccessTokenWithExipration (user) {
 }
 
 app.post('/login', (req, res) => {
-  const { username, password, } = req.body
+  const { email, password, } = req.body
 
-  User.findOne({ username, }, (err, doc) => {
+  User.findOne({ email, }, (err, doc) => {
     if (err) {
       // console.log(err)
       res.status(HTTP_STATUS_UNAUTHORIZED)
@@ -135,8 +135,8 @@ app.post('/login', (req, res) => {
         }, [{}]))
       }
 
-      const accessToken = generateAccessTokenWithExipration({ username, })
-      const refreshToken = jwt.sign({ username, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
+      const accessToken = generateAccessTokenWithExipration({ email, })
+      const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
       doc.authentication = {
         token: accessToken,
         refreshToken,
@@ -163,7 +163,6 @@ app.post('/login', (req, res) => {
 
 app.post('/register', async (req, res) => {
   const user = new User({
-    username: req.body.username,
     email: req.body.email,
     password: req.body.password,
   })

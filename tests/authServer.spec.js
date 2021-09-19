@@ -14,7 +14,6 @@ describe('AuthServer', () => {
   describe('/login', () => {
     it('should return array of object contain token and refresh token', async () => {
       const user = new User({
-        username: 'user A',
         email: 'email@emal.com',
         password: 'userA'
       })
@@ -22,7 +21,7 @@ describe('AuthServer', () => {
 
       await request(app)
         .post('/login').send({
-          username: 'user A',
+          email: 'email@emal.com',
           password: 'userA'
         }).expect('Content-Type', 'application/json; charset=utf-8')
         .expect(200)
@@ -56,7 +55,6 @@ describe('AuthServer', () => {
 
     it('should return 200 when refresh token exist', async () => {
       const user = new User({
-        username: 'userName',
         email: 'email@emal.com',
         password: 'password',
         authentication: {
@@ -84,27 +82,14 @@ describe('AuthServer', () => {
   })
 
   describe('/register', () => {
-    it.skip('should return 400 failed to create account when required email not fulfilled', async () => {
-      const res = await request(app)
-        .post('/register').send({
-          username: 'my username',
-          password: 'p@ssw0d'
-        })
-        .expect(400)
-      expect(res.body.status.code).toEqual('06')
-      expect(res.body.status.description).toEqual('failed to crate account')
-    })
-
     it('should return 400 failed to create account when record already exist', async () => {
       const user = new User({
-        username: 'userName',
         email: 'email@emal.com',
         password: 'password'
       })
       await user.save()
       const res = await request(app)
         .post('/register').send({
-          username: 'userName',
           email: 'email@emal.com',
           password: 'password'
         })
@@ -116,7 +101,6 @@ describe('AuthServer', () => {
     it('should return 201 when success create record', async () => {
       const res = await request(app)
         .post('/register').send({
-          username: 'userName',
           email: 'email@emal.com',
           password: 'password'
         })
