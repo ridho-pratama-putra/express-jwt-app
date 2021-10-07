@@ -8,7 +8,8 @@
     "devApp": "nodemon src/app.js",
     "devAuth": "nodemon src/auth.js",
     "lint": "eslint . --ext .js",
-    "lint:fix": "npm run lint -- --fix"
+    "lint:fix": "eslint . --ext .js --fix",
+    "build": ""
   },
   "author": "",
   "license": "ISC",
