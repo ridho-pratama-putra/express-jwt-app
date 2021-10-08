@@ -4,7 +4,6 @@ const Schema = mongoose.Schema
 const Authentication = require('./authentication')
 const SALT_WORK_FACTOR = 10
 
-
 const UserSchema = new Schema({
   username: {
     type: String,
@@ -27,7 +26,7 @@ const UserSchema = new Schema({
     maxlength: 1024,
   },
   authentication: {
-    type: Authentication
+    type: Authentication,
   },
 })
 
@@ -53,10 +52,10 @@ UserSchema.pre('save', function (next) {
 })
 
 UserSchema.methods.comparePassword = function (password, cb) {
-  return bcrypt.compare(password, this.password, function(err, isMatch) {
-    if (err) return cb(err);
-    cb(null, isMatch);
-  });
+  return bcrypt.compare(password, this.password, function (err, isMatch) {
+    if (err) return cb(err)
+    cb(null, isMatch)
+  })
 }
 
 module.exports = mongoose.model('User', UserSchema)

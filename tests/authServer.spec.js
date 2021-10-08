@@ -13,18 +13,21 @@ describe('AuthServer', () => {
 
   describe('/login', () => {
     it('should return array of object contain token and refresh token', async () => {
+      const user = new User({
+        username: 'user A',
+        email: 'email@emal.com',
+        password: 'password'
+      })
+      await user.save()
       await request(app)
         .post('/login').send({
-          username: 'user A'
+          username: 'user A',
+          password: 'password'
         }).expect('Content-Type', 'application/json; charset=utf-8')
         .expect(200)
         .then((response) => {
-          expect(response.body).toEqual(
-            expect.objectContaining({
-              accessToken: expect.any(String),
-              refreshToken: expect.any(String)
-            })
-          );
+          expect(response.body.result[0].accessToken).not.toBe(null);
+          expect(response.body.result[0].refreshtoken).not.toBe(null);
         });
     });
   });
@@ -33,27 +36,64 @@ describe('AuthServer', () => {
     it('should return 401 when no refresh token listed', async () => {
       await request(app)
         .post('/token').send({
-          token: null
+            refreshToken: null
         })
         .expect(401);
     });
-    it('should return 403 when no refresh token listed', async () => {
+    it('should return 401 when no refresh token listed', async () => {
       await request(app)
         .post('/token').send({
-          token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
-        .expect(403);
+        .expect(401);
+    });
+    it('should return 200 when success refresh token', async () => {
+      const user = new User({
+        username: 'user A',
+        email: 'email@emal.com',
+        password: 'password',
+        authentication: {
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        }
+      })
+      await user.save()
+      await request(app)
+          .post('/token').send({
+            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+          })
+          .expect(200)
+          .then((response) => {
+            expect(response.body.result[0].accessToken).not.toBe(null)
+            expect(response.body.result[0].refreshtoken).not.toBe(null)
+          })
     });
   });
 
   describe('/logout', () => {
-    it('should return 204 after delete refresh token', async () => {
+    it('should return 401 when no user having the token', async () => {
       await request(app)
         .delete('/logout').send({
           token: 'fake invalid token'
         })
-        .expect(204);
+        .expect(401);
     });
+
+    it('should success logout when any user having the token', async () => {
+      const user = new User({
+        username: 'userName',
+        email: 'email@emal.com',
+        password: 'password',
+        authentication: {
+          token: 'fake invalid token'
+        }
+      })
+      await user.save()
+      await request(app)
+          .delete('/logout').send({
+            token: 'fake invalid token'
+          })
+          .expect(200)
+    })
   });
 
   describe('/register', () => {
