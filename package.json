@@ -8,16 +8,20 @@
     "devApp": "nodemon src/app.js",
     "devAuth": "nodemon src/auth.js",
     "lint": "eslint . --ext .js",
-    "lint:fix": "npm run lint -- --fix"
+    "lint:fix": "eslint . --ext .js --fix",
+    "build": ""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "cookie-session": "^1.4.0",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^5.13.3"
+    "mongoose": "^5.13.3",
+    "passport": "^0.4.1",
+    "passport-google-oauth20": "^2.0.0"
   },
   "devDependencies": {
     "eslint": "^7.31.0",
