@@ -1,10 +1,15 @@
-const request = require('supertest')
-const app = require('../src/authServer') // the express server
-const db = require('./db')
+const request = require('supertest');
+const app = require('../src/authServer'); // the express server
+const db = require('./db');
 const User = require('../src/models/user')
+const passport = require('passport')
+
 
 describe('AuthServer', () => {
-  beforeAll(async () => await db.connect())
+  beforeAll(async () => {
+      passport.authenticate = jest.fn((authType, options, callback) => () => { callback('This is an error', null); });
+      await db.connect()
+  })
   afterAll(async () => await db.closeDatabase())
   afterEach(async () => {
     jest.restoreAllMocks()
@@ -26,60 +31,75 @@ describe('AuthServer', () => {
         }).expect('Content-Type', 'application/json; charset=utf-8')
         .expect(200)
         .then((response) => {
-          expect(response.body).toHaveProperty('result') // true
-          expect(response.body.result).toStrictEqual(expect.arrayContaining([
-            expect.objectContaining({
-              accessToken: expect.any(String),
-              refreshToken: expect.any(String)
-            })
-          ]))
-        })
-    })
-  })
+          expect(response.body.result[0].accessToken).not.toBe(null);
+          expect(response.body.result[0].refreshtoken).not.toBe(null);
+        });
+    });
+  });
 
   describe('/token', () => {
     it('should return 401 when no refresh token listed', async () => {
       await request(app)
         .post('/token').send({
-          refreshToken: null
+            refreshToken: null
         })
-        .expect(401)
-    })
-    it('should return 403 when no refresh token listed', async () => {
+        .expect(401);
+    });
+    it('should return 401 when no refresh token listed', async () => {
       await request(app)
         .post('/token').send({
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
-        .expect(401)
-    })
-
-    it('should return 200 when refresh token exist', async () => {
+        .expect(401);
+    });
+    it('should return 200 when success refresh token', async () => {
       const user = new User({
+        username: 'user A',
         email: 'email@emal.com',
         password: 'password',
         authentication: {
-          accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJpZGhvcyIsImlhdCI6MTYzMTMzODUyOSwiZXhwIjoxNjMxMzM4NjI5fQ.kvUcKgbQqqwYfEQxduKIMgN6bSlDw6Mv2Yotx9e3has',
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJpZGhvcyIsImlhdCI6MTYzMTMzODUyOX0.JHSgBaabIhRVt0p6FsqmwnbCy1GQw6_spRO6jhChh8Q',
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         }
       })
       await user.save()
       await request(app)
-        .post('/token').send({
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6InJpZGhvcyIsImlhdCI6MTYzMTMzODUyOX0.JHSgBaabIhRVt0p6FsqmwnbCy1GQw6_spRO6jhChh8Q'
-        })
-        .expect(200)
-    })
-  })
+          .post('/token').send({
+            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+          })
+          .expect(200)
+          .then((response) => {
+            expect(response.body.result[0].accessToken).not.toBe(null)
+            expect(response.body.result[0].refreshtoken).not.toBe(null)
+          })
+    });
+  });
 
   describe('/logout', () => {
-    it('should return 204 after delete refresh token', async () => {
+    it('should return 401 when no user having the token', async () => {
       await request(app)
         .delete('/logout').send({
           token: 'fake invalid token'
         })
-        .expect(401)
+        .expect(401);
+    });
+
+    it('should success logout when any user having the token', async () => {
+      const user = new User({
+        username: 'userName',
+        email: 'email@emal.com',
+        password: 'password',
+        authentication: {
+          token: 'fake invalid token'
+        }
+      })
+      await user.save()
+      await request(app)
+          .delete('/logout').send({
+            token: 'fake invalid token'
+          })
+          .expect(200)
     })
-  })
+  });
 
   describe('/register', () => {
     it('should return 400 failed to create account when record already exist', async () => {

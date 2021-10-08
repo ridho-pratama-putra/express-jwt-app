@@ -1,6 +1,6 @@
 // status
 /// /code
-/// /descctiption
+/// /description
 // result as array of object
 
 const responseFactory = (status, result) => {

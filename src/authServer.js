@@ -1,10 +1,10 @@
-require('dotenv').config()
+require('dotenv').config({ path: '/Users/19057499/Documents/playground/.env' })
 const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
-const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_CONFLICT, } = require('./constants/HttpStatus')
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, } = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 
@@ -55,10 +55,13 @@ app.post('/token', (req, res) => {
 
     jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, email) => {
       if (err) {
-        return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
+        return res.sendStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR)
       }
       const accessToken = generateAccessTokenWithExipration(email)
-      res.json({ accessToken, })
+      res.status(HTTP_STATUS_OK).json(responseFactory({
+        code: '00',
+        description: 'Logout success',
+      }, [{ accessToken, refreshToken, }]))
     })
   })
 })
