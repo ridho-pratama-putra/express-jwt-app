@@ -100,17 +100,18 @@ app.post('/login', (req, res) => {
   const { email, password, } = req.body
 
   User.findOne({ email, }, (err, doc) => {
-    if (err) {
-      // console.log(err)
-      res.status(HTTP_STATUS_UNAUTHORIZED)
-      return
+    if (err || doc === null) {
+      return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+        code: '06',
+        description: 'You r not registered',
+      }, [{}]))
     }
 
     doc.comparePassword(password, (err, isMatch) => {
       if (err) {
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
-          description: 'failed to login',
+          description: 'Failed to login',
         }, [{ err, }]))
       }
       if (!isMatch) {
