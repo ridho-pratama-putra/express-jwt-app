@@ -7,9 +7,11 @@ const responseFactory = require('./models/response')
 const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, } = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
+const cors = require('cors')
 
 app.use(express.json())
 app.use(passport.initialize())
+app.use(cors())
 passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -50,7 +52,10 @@ app.post('/token', (req, res) => {
 
   User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
     if (err || doc === null) {
-      return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
+      return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+        code: '06',
+        description: 'You r not registered',
+      }, [{}]))
     }
 
     jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, email) => {
@@ -67,9 +72,13 @@ app.post('/token', (req, res) => {
 })
 
 app.delete('/logout', (req, res) => {
+  console.log('token logout :: ', req.body)
   User.findOne({ 'authentication.token': req.body.token, }, (err, doc) => {
     if (err || doc === null) {
-      return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
+      return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+        code: '06',
+        description: 'token not found',
+      }, [{}]))
     }
 
     doc.authentication = {
@@ -98,7 +107,7 @@ function generateAccessTokenWithExipration (email) {
 
 app.post('/login', (req, res) => {
   const { email, password, } = req.body
-
+  console.log('loggggg : ', email, ' :: ', password)
   User.findOne({ email, }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
