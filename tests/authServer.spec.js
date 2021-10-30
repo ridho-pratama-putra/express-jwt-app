@@ -99,6 +99,10 @@ describe('AuthServer', () => {
           })
           .expect(200)
     })
+
+    it('should check authentication header contain Bearer', function () {
+
+    })
   });
 
   describe('/register', () => {

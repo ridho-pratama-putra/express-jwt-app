@@ -65,15 +65,24 @@ app.post('/token', (req, res) => {
       const accessToken = generateAccessTokenWithExipration(email)
       res.status(HTTP_STATUS_OK).json(responseFactory({
         code: '00',
-        description: 'Logout success',
+        description: 'Refresh token success',
       }, [{ accessToken, refreshToken, }]))
     })
   })
 })
 
 app.delete('/logout', (req, res) => {
-  console.log('token logout :: ', req.body)
-  User.findOne({ 'authentication.token': req.body.token, }, (err, doc) => {
+  let token , authHeader= req.headers.authorization
+  if (authHeader.startsWith("Bearer ")){
+    token = authHeader.substring(7, authHeader.length);
+  } else {
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'Unautorized',
+    }, [{}]))
+  }
+
+  User.findOne({ 'authentication.token': token }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
         code: '06',
