@@ -89,13 +89,13 @@ describe('AuthServer', () => {
         email: 'email@emal.com',
         password: 'password',
         authentication: {
-          token: 'fake invalid token'
+          token: 'true token'
         }
       })
       await user.save()
       await request(app)
           .delete('/logout').send({
-            token: 'fake invalid token'
+            token: 'true token'
           })
           .expect(200)
     })

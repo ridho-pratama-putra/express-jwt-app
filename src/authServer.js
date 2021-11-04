@@ -13,35 +13,35 @@ app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
 passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL,
-},
-function (accessToken, refreshToken, profile, done) {
-  // passport callback function
-  // check if user already exists in our db with the given profile ID
-  console.log('using GoogleStrategy :: ')
-  User.findOne({
-    $or: [
-      { googleId: profile.id, },
-      { email: profile.emails[0].value, }
-    ],
-  }).then((currentUser) => {
-    if (currentUser && currentUser.googleId) { // registered with google account
-      done(null, currentUser)
-    } else if (currentUser && currentUser.email) { // registered manually
-      done(null, false, { message: 'Seems already registered without google account, Do you want to reset your password?', })
-    } else { // if not, create a new user
-      new User({
-        displayName: profile.displayName,
-        googleId: profile.id,
-        email: profile.emails[0].value,
-      }).save().then((newUser) => {
-        done(null, newUser)
-      })
-    }
-  })
-}
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL,
+  },
+  function (accessToken, refreshToken, profile, done) {
+    // passport callback function
+    // check if user already exists in our db with the given profile ID
+    console.log('using GoogleStrategy :: ')
+    User.findOne({
+      $or: [
+        { googleId: profile.id, },
+        { email: profile.emails[0].value, }
+      ],
+    }).then((currentUser) => {
+      if (currentUser && currentUser.googleId) { // registered with google account
+        done(null, currentUser)
+      } else if (currentUser && currentUser.email) { // registered manually
+        done(null, false, { message: 'Seems already registered without google account, Do you want to reset your password?', })
+      } else { // if not, create a new user
+        new User({
+          displayName: profile.displayName,
+          googleId: profile.id,
+          email: profile.emails[0].value,
+        }).save().then((newUser) => {
+          done(null, newUser)
+        })
+      }
+    })
+  }
 ))
 
 app.post('/token', (req, res) => {
@@ -66,15 +66,19 @@ app.post('/token', (req, res) => {
       res.status(HTTP_STATUS_OK).json(responseFactory({
         code: '00',
         description: 'Refresh token success',
-      }, [{ accessToken, refreshToken, }]))
+      }, [{
+        accessToken,
+        refreshToken,
+      }]))
     })
   })
 })
 
 app.delete('/logout', (req, res) => {
-  let token , authHeader= req.headers.authorization
-  if (authHeader.startsWith("Bearer ")){
-    token = authHeader.substring(7, authHeader.length);
+  let token, authHeader = req.headers.authorization
+  console.log(token)
+  if (authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7, authHeader.length)
   } else {
     return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
       code: '06',
@@ -82,7 +86,7 @@ app.delete('/logout', (req, res) => {
     }, [{}]))
   }
 
-  User.findOne({ 'authentication.token': token }, (err, doc) => {
+  User.findOne({ 'authentication.refreshToken': token }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
         code: '06',
@@ -196,7 +200,7 @@ app.get('/failed', (req, res) => {
   res.status(HTTP_STATUS_CONFLICT).json(responseFactory({
     code: '06',
     description: 'failed to log in',
-  }, [{ }]))
+  }, [{}]))
 })
 
 app.get('/auth/google/redirect', passport.authenticate('google', { session: false, }), (req, res) => {
@@ -216,14 +220,21 @@ app.get('/auth/google/redirect', passport.authenticate('google', { session: fals
         code: '06',
         description: 'Failed to update token',
       }, [{}]))
+
     }
-    res.status(HTTP_STATUS_OK).json(responseFactory({
-      code: '00',
-      description: 'Success',
-    }, [{
-      accessToken,
-      refreshToken,
-    }]))
+
+    // return res.redirect("http://localhost:3000/api?eth=" + accessToken);
+
+    // res.status(HTTP_STATUS_OK).json(responseFactory({
+    //   code: '00',
+    //   description: 'Success',
+    // }, [{
+    //   accessToken,
+    //   refreshToken,
+    // }]))
+    res.cookie('accessToken', accessToken);
+    res.cookie('refreshToken', refreshToken);
+    res.redirect('http://localhost:3000/')
   })
 })
 
