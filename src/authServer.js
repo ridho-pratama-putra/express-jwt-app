@@ -8,7 +8,9 @@ const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATU
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require('cors')
+var morgan = require('morgan')
 
+app.use(morgan(':date[iso] :remote-addr :method :url :status :res[content-length] - :response-time ms'));
 app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
@@ -20,7 +22,6 @@ passport.use(new GoogleStrategy({
   function (accessToken, refreshToken, profile, done) {
     // passport callback function
     // check if user already exists in our db with the given profile ID
-    console.log('using GoogleStrategy :: ')
     User.findOne({
       $or: [
         { googleId: profile.id, },
@@ -58,11 +59,11 @@ app.post('/token', (req, res) => {
       }, [{}]))
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, email) => {
+    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         return res.sendStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR)
       }
-      const accessToken = generateAccessTokenWithExipration(email)
+      const accessToken = generateAccessTokenWithExipration(decoded)
       res.status(HTTP_STATUS_OK).json(responseFactory({
         code: '00',
         description: 'Refresh token success',
@@ -76,7 +77,6 @@ app.post('/token', (req, res) => {
 
 app.delete('/logout', (req, res) => {
   let token, authHeader = req.headers.authorization
-  console.log(token)
   if (authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7, authHeader.length)
   } else {
@@ -120,7 +120,6 @@ function generateAccessTokenWithExipration (email) {
 
 app.post('/login', (req, res) => {
   const { email, password, } = req.body
-  console.log('loggggg : ', email, ' :: ', password)
   User.findOne({ email, }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
