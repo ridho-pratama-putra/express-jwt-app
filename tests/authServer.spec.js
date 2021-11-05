@@ -4,7 +4,6 @@ const db = require('./db');
 const User = require('../src/models/user')
 const passport = require('passport')
 
-
 describe('AuthServer', () => {
   beforeAll(async () => {
       passport.authenticate = jest.fn((authType, options, callback) => () => { callback('This is an error', null); });
@@ -75,11 +74,15 @@ describe('AuthServer', () => {
   });
 
   describe('/logout', () => {
+    it('should return 401 when request doesnt contain Bearer Authorization', async () => {
+      await request(app)
+        .delete('/logout').set('Authorization','true token')
+        .expect(401)
+    });
+
     it('should return 401 when no user having the token', async () => {
       await request(app)
-        .delete('/logout').send({
-          token: 'fake invalid token'
-        })
+        .delete('/logout').set('Authorization','Bearer invalid token')
         .expect(401);
     });
 
@@ -89,19 +92,13 @@ describe('AuthServer', () => {
         email: 'email@emal.com',
         password: 'password',
         authentication: {
-          token: 'true token'
+          refreshToken: 'true token'
         }
       })
       await user.save()
       await request(app)
-          .delete('/logout').send({
-            token: 'true token'
-          })
+          .delete('/logout').set('Authorization','Bearer true token')
           .expect(200)
-    })
-
-    it('should check authentication header contain Bearer', function () {
-
     })
   });
 

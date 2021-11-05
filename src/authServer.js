@@ -1,4 +1,4 @@
-require('dotenv').config({ path: '/Users/19057499/Documents/playground/.env' })
+require('dotenv').config({ path: '/home/abc/Documents/express-jwt-app/.env' })
 const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
@@ -214,23 +214,12 @@ app.get('/auth/google/redirect', passport.authenticate('google', { session: fals
   }
   user.save((err, doc) => {
     if (err) {
-      // console.log(err)
       return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
         code: '06',
         description: 'Failed to update token',
       }, [{}]))
 
     }
-
-    // return res.redirect("http://localhost:3000/api?eth=" + accessToken);
-
-    // res.status(HTTP_STATUS_OK).json(responseFactory({
-    //   code: '00',
-    //   description: 'Success',
-    // }, [{
-    //   accessToken,
-    //   refreshToken,
-    // }]))
     res.cookie('accessToken', accessToken);
     res.cookie('refreshToken', refreshToken);
     res.redirect('http://localhost:3000/')
