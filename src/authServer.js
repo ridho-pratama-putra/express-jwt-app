@@ -10,7 +10,14 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require('cors')
 var morgan = require('morgan')
 
-app.use(morgan(':date[iso] :remote-addr :method :url :status :res[content-length] - :response-time ms'));
+const originalSend = app.response.send
+app.response.send = function sendOverWrite(body) {
+  originalSend.call(this, body)
+  this.__custombody__ = body
+}
+morgan.token('body', (req) => JSON.stringify(req.body));
+morgan.token('response', (_, res) => JSON.stringify(res.__custombody__));
+app.use(morgan(':date[iso] :remote-addr :method :url :status :body :response - :response-time ms'));
 app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
