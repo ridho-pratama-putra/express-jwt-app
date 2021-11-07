@@ -4,7 +4,7 @@ const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
-const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, } = require('./constants/HttpStatus')
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, HTTP_STATUS_CONFLICT} = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require('cors')
@@ -38,7 +38,7 @@ passport.use(new GoogleStrategy({
       if (currentUser && currentUser.googleId) { // registered with google account
         done(null, currentUser)
       } else if (currentUser && currentUser.email) { // registered manually
-        done(null, false, { message: 'Seems already registered without google account, Do you want to reset your password?', })
+        done(null, false, { message: '', })
       } else { // if not, create a new user
         new User({
           displayName: profile.displayName,
@@ -51,6 +51,63 @@ passport.use(new GoogleStrategy({
     })
   }
 ))
+
+app.get('/auth/google', passport.authenticate('google', {
+  scope: ['profile', 'email'],
+}))
+
+app.get('/failed', (req, res) => {
+  res.status(HTTP_STATUS_CONFLICT).json(responseFactory({
+    code: '06',
+    description: 'Failed to log in.',
+  }, [{}]))
+})
+
+app.get('/auth/google/redirect', passport.authenticate('google', { session: false, failureRedirect: '/failed'}), (req, res) => {
+  const { user, } = req
+  const { email, } = user
+  // generate jwt as log in process
+  const accessToken = generateAccessTokenWithExipration({ email, })
+  const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
+  user.authentication = {
+    token: accessToken,
+    refreshToken,
+  }
+  user.save((err, doc) => {
+    if (err) {
+      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
+        code: '06',
+        description: 'Database error',
+      }, [{}]))
+
+    }
+    res.cookie('accessToken', accessToken);
+    res.cookie('refreshToken', refreshToken);
+    res.redirect('http://localhost:3000/')
+  })
+})
+
+app.post('/internal-account', (req, res) => {
+  const { email } = req.body
+  User.findOne({ email: email, }).then((currentUser) => {
+    if (currentUser && currentUser.googleId && !currentUser.password) {
+      return res.status(HTTP_STATUS_OK).json(responseFactory({
+        code: '06',
+        description: 'please login with your google account',
+      }, []))
+    } else if (currentUser){
+      return res.status(HTTP_STATUS_OK).json(responseFactory({
+        code: '00',
+        description: 'success',
+      }, []))
+    } else {
+      return res.status(HTTP_STATUS_OK).json(responseFactory({
+        code: '06',
+        description: 'account not found',
+      }, []))
+    }
+  });
+})
 
 app.post('/token', (req, res) => {
   const refreshToken = req.body.refreshToken
@@ -195,41 +252,6 @@ app.post('/register', async (req, res) => {
       code: '00',
       description: 'Success',
     }, [doc]))
-  })
-})
-
-app.get('/auth/google', passport.authenticate('google', {
-  scope: ['profile', 'email'],
-}))
-
-app.get('/failed', (req, res) => {
-  res.status(HTTP_STATUS_CONFLICT).json(responseFactory({
-    code: '06',
-    description: 'failed to log in',
-  }, [{}]))
-})
-
-app.get('/auth/google/redirect', passport.authenticate('google', { session: false, }), (req, res) => {
-  const { user, } = req
-  const { email, } = user
-  // generate jwt as log in process
-  const accessToken = generateAccessTokenWithExipration({ email, })
-  const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
-  user.authentication = {
-    token: accessToken,
-    refreshToken,
-  }
-  user.save((err, doc) => {
-    if (err) {
-      return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-        code: '06',
-        description: 'Failed to update token',
-      }, [{}]))
-
-    }
-    res.cookie('accessToken', accessToken);
-    res.cookie('refreshToken', refreshToken);
-    res.redirect('http://localhost:3000/')
   })
 })
 

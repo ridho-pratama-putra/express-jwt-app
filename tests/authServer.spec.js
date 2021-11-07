@@ -130,4 +130,42 @@ describe('AuthServer', () => {
       expect(res.body.status.description).toEqual('Success')
     })
   })
+
+  describe('/internal-account', function () {
+    it('should return 200 when users email not yet registered', async () => {
+      const res = await request(app)
+        .post('/internal-account').send({
+          email: 'email@emal.com',
+        })
+        .expect(200)
+      expect(res.body.status.description).toEqual('account not found')
+    })
+
+    it('should return 200 when users email is exist only on external account: google', async () => {
+      const user = new User({
+        googleId: 'email@emal.com',
+        email: 'email@emal.com',
+      })
+      await user.save()
+      const res = await request(app)
+        .post('/internal-account').send({
+          email: 'email@emal.com',
+        })
+        .expect(200)
+      expect(res.body.status.description).toEqual('please login with your google account')
+    })
+
+    it('should return 200 when users email is exist on email', async () => {
+      const user = new User({
+        email: 'email@emal.com',
+        password: 'password'
+      })
+      await user.save()
+      await request(app)
+        .post('/internal-account').send({
+          email: 'email@emal.com',
+        })
+        .expect(200)
+    })
+  })
 })
