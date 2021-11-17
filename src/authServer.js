@@ -69,8 +69,7 @@ app.get('/auth/google/redirect', passport.authenticate('google', {
 }), (req, res) => {
   const { user, } = req
   const { email, } = user
-  // generate jwt as log in process
-  const accessToken = generateAccessTokenWithExipration({ email, })
+  const accessToken = generateAccessTokenWithExpiration({ email, })
   const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
   user.authentication = {
     token: accessToken,
@@ -134,10 +133,12 @@ app.post('/token', (req, res) => {
 
     jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
+        // this should send forced logout
         return res.sendStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR)
       }
-      // console.log('decoded :: ', decoded)
-      const accessToken = generateAccessTokenWithExipration(decoded)
+      console.log('decoded :: ', decoded)
+      const {email} =decoded
+      const accessToken = generateAccessTokenWithExpiration({email})
       if (token === accessToken) {
         console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
       }
@@ -145,16 +146,13 @@ app.post('/token', (req, res) => {
         token: accessToken,
         refreshToken,
       }
-      // console.log('data changed :: ', doc.authentication)
       doc.save((err, doc) => {
         if (err) {
-          // console.log(err)
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
             description: 'Failed to update token',
           }, [{}]))
         }
-        // console.log(doc)
         res.status(HTTP_STATUS_OK).json(responseFactory({
           code: '00',
           description: 'Refresh token success',
@@ -192,7 +190,6 @@ app.delete('/logout', (req, res) => {
     }
     doc.save((err, doc) => {
       if (err) {
-        // console.log(err)
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
           description: 'Failed to logout',
@@ -206,8 +203,12 @@ app.delete('/logout', (req, res) => {
   })
 })
 
-function generateAccessTokenWithExipration (email) {
-  return jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '50s', })
+function generateAccessTokenWithExpiration (email) {
+  return jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5s', })
+}
+
+function generateRefreshTokenWithExpiration (email) {
+  return jwt.sign(email, process.env.REFRESH_ACCESS_TOKEN_SECRET, { expiresIn: '1d', })
 }
 
 app.post('/login', (req, res) => {
@@ -234,15 +235,14 @@ app.post('/login', (req, res) => {
         }, [{}]))
       }
 
-      const accessToken = generateAccessTokenWithExipration({ email, })
-      const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
+      const accessToken = generateAccessTokenWithExpiration({ email, })
+      const refreshToken = generateRefreshTokenWithExpiration({ email, })
       doc.authentication = {
         token: accessToken,
         refreshToken,
       }
       doc.save((err, doc) => {
         if (err) {
-          // console.log(err)
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
             description: 'Failed to update token',
@@ -268,7 +268,6 @@ app.post('/register', async (req, res) => {
 
   await user.save((err, doc) => {
     if (err) {
-      // console.log(err)
       res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
         code: '06',
         description: 'failed to crate account',
@@ -286,9 +285,6 @@ app.post('/register', async (req, res) => {
 app.get('/', (req, res) => {
   let authHeader = req.headers.authorization
   let token = authHeader && authHeader.split(' ')[1].trim()
-  const contoh = 'contoh'
-  console.log('token', token)
-  console.log('tokenconton', contoh)
   let isJWTValid = true
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
     if (err) {
