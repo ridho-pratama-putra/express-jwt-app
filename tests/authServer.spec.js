@@ -1,13 +1,15 @@
-const request = require('supertest');
-const app = require('../src/authServer'); // the express server
-const db = require('./db');
+const request = require('supertest')
+const app = require('../src/authServer') // the express server
+const db = require('./db')
 const User = require('../src/models/user')
 const passport = require('passport')
 
 describe('AuthServer', () => {
   beforeAll(async () => {
-      passport.authenticate = jest.fn((authType, options, callback) => () => { callback('This is an error', null); });
-      await db.connect()
+    passport.authenticate = jest.fn((authType, options, callback) => () => {
+      callback('This is an error', null)
+    })
+    await db.connect()
   })
   afterAll(async () => await db.closeDatabase())
   afterEach(async () => {
@@ -30,27 +32,23 @@ describe('AuthServer', () => {
         }).expect('Content-Type', 'application/json; charset=utf-8')
         .expect(200)
         .then((response) => {
-          expect(response.body.result[0].accessToken).not.toBe(null);
-          expect(response.body.result[0].refreshtoken).not.toBe(null);
-        });
-    });
-  });
+          expect(response.body.result[0].accessToken).not.toBe(null)
+          expect(response.body.result[0].refreshtoken).not.toBe(null)
+        })
+    })
+  })
 
   describe('/token', () => {
     it('should return 401 when no refresh token listed', async () => {
       await request(app)
-        .post('/token').send({
-            refreshToken: null
+        .post('/token')
+        .set('Authorization', 'Bearer invalid token') //idk still needed or not
+        .send({
+          refreshToken: null
         })
-        .expect(401);
-    });
-    it('should return 401 when no refresh token listed', async () => {
-      await request(app)
-        .post('/token').send({
-            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
-        })
-        .expect(401);
-    });
+        .expect(401)
+    })
+
     it('should return 200 when success refresh token', async () => {
       const user = new User({
         username: 'user A',
@@ -62,29 +60,67 @@ describe('AuthServer', () => {
       })
       await user.save()
       await request(app)
-          .post('/token').send({
-            refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
-          })
-          .expect(200)
-          .then((response) => {
-            expect(response.body.result[0].accessToken).not.toBe(null)
-            expect(response.body.result[0].refreshtoken).not.toBe(null)
-          })
-    });
-  });
+        .post('/token')
+        .set('Authorization', 'Bearer expired token') //idk still needed or not
+        .send({
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        })
+        .expect(200)
+        .then((response) => {
+          expect(response.body.result[0].accessToken).not.toBe(null)
+          expect(response.body.result[0].refreshToken).not.toBe(null)
+        })
+    })
+    it('should return unauthorized when called without bearer authorized header', async () => {
+      const user = new User({
+        username: 'user A',
+        email: 'email@emal.com',
+        password: 'password',
+        authentication: {
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        }
+      })
+      await user.save()
+      await request(app)
+        .post('/token')
+        .set('Authorization', 'expired token') //idk still needed or not
+        .send({
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        })
+        .expect(401)
+    })
+
+    it('should return unauthorized when called without authorized header', async () => {
+      const user = new User({
+        username: 'user A',
+        email: 'email@emal.com',
+        password: 'password',
+        authentication: {
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        }
+      })
+      await user.save()
+      await request(app)
+        .post('/token')
+        .send({
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        })
+        .expect(401)
+    })
+  })
 
   describe('/logout', () => {
     it('should return 401 when request doesnt contain Bearer Authorization', async () => {
       await request(app)
-        .delete('/logout').set('Authorization','true token')
+        .delete('/logout').set('Authorization', 'true token')
         .expect(401)
-    });
+    })
 
     it('should return 401 when no user having the token', async () => {
       await request(app)
-        .delete('/logout').set('Authorization','Bearer invalid token')
-        .expect(401);
-    });
+        .delete('/logout').set('Authorization', 'Bearer invalid token')
+        .expect(401)
+    })
 
     it('should success logout when any user having the token', async () => {
       const user = new User({
@@ -97,10 +133,10 @@ describe('AuthServer', () => {
       })
       await user.save()
       await request(app)
-          .delete('/logout').set('Authorization','Bearer true token')
-          .expect(200)
+        .delete('/logout').set('Authorization', 'Bearer true token')
+        .expect(200)
     })
-  });
+  })
 
   describe('/register', () => {
     it('should return 400 failed to create account when record already exist', async () => {
