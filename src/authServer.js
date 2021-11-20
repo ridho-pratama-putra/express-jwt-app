@@ -21,36 +21,36 @@ app.use(morgan(':date[iso] :remote-addr :method :url :status :body :response - :
 app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
-// passport.use(new GoogleStrategy({
-//     clientID: process.env.GOOGLE_CLIENT_ID,
-//     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-//     callbackURL: process.env.CALLBACK_URL,
-//   },
-//   function (accessToken, refreshToken, profile, done) {
-//     // passport callback function
-//     // check if user already exists in our db with the given profile ID
-//     User.findOne({
-//       $or: [
-//         { googleId: profile.id, },
-//         { email: profile.emails[0].value, }
-//       ],
-//     }).then((currentUser) => {
-//       if (currentUser && currentUser.googleId) { // registered with google account
-//         done(null, currentUser)
-//       } else if (currentUser && currentUser.email) { // registered manually
-//         done(null, false, { message: '', })
-//       } else { // if not, create a new user
-//         new User({
-//           displayName: profile.displayName,
-//           googleId: profile.id,
-//           email: profile.emails[0].value,
-//         }).save().then((newUser) => {
-//           done(null, newUser)
-//         })
-//       }
-//     })
-//   }
-// ))
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: process.env.CALLBACK_URL,
+  },
+  function (accessToken, refreshToken, profile, done) {
+    // passport callback function
+    // check if user already exists in our db with the given profile ID
+    User.findOne({
+      $or: [
+        { googleId: profile.id, },
+        { email: profile.emails[0].value, }
+      ],
+    }).then((currentUser) => {
+      if (currentUser && currentUser.googleId) { // registered with google account
+        done(null, currentUser)
+      } else if (currentUser && currentUser.email) { // registered manually
+        done(null, false, { message: '', })
+      } else { // if not, create a new user
+        new User({
+          displayName: profile.displayName,
+          googleId: profile.id,
+          email: profile.emails[0].value,
+        }).save().then((newUser) => {
+          done(null, newUser)
+        })
+      }
+    })
+  }
+))
 
 app.get('/auth/google', passport.authenticate('google', {
   scope: ['profile', 'email'],
@@ -115,10 +115,16 @@ app.post('/token', (req, res) => {
   const refreshToken = req.body.refreshToken
   const authHeader = req.headers.authorization
   if (authHeader === undefined || !authHeader.startsWith('Bearer ')) {
-    return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'You r not authorized',
+    }, [{}]))
   }
   if (refreshToken == null) {
-    return res.sendStatus(HTTP_STATUS_UNAUTHORIZED)
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'You r not registered',
+    }, [{}]))
   }
 
   let token = authHeader && authHeader.split(' ')[1].trim()
@@ -134,7 +140,10 @@ app.post('/token', (req, res) => {
     jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         // this should send forced logout
-        return res.sendStatus(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
+          code: '06',
+          description: 'please relogin',
+        }, [{}]))
       }
       console.log('decoded :: ', decoded)
       const {email} =decoded
@@ -204,7 +213,7 @@ app.delete('/logout', (req, res) => {
 })
 
 function generateAccessTokenWithExpiration (email) {
-  return jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '5s', })
+  return jwt.sign(email, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '10s', })
 }
 
 function generateRefreshTokenWithExpiration (email) {
@@ -292,7 +301,10 @@ app.get('/', (req, res) => {
     }
   })
   if (isJWTValid) {
-    res.sendStatus(HTTP_STATUS_OK)
+    return res.status(HTTP_STATUS_OK).json(responseFactory({
+      code: '00',
+      description: 'Content retrieved',
+    }, [{}]))
   } else {
     return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
       code: '06',
