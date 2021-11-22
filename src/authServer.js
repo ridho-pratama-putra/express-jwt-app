@@ -126,50 +126,61 @@ app.post('/token', async (req, res) => {
     }, [{}]))
   }
 
-  const token = authHeader && authHeader.split(' ')[1].trim()
+  const searchUser = await User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
+    if (err) {
+      return false
+    }
+    return doc
+  })
 
-  await User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
-    if (err || doc === null) {
-      return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+  if (searchUser === false) {
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'Database error',
+    }, [{}]))
+  }
+
+  if (searchUser === null) {
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'You r not registered',
+    }, [{}]))
+  }
+
+  const verifiedRefreshToken = await jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (error, decoded) => {
+    if (error) {
+      return false
+    }
+    return decoded
+  })
+
+  if (verifiedRefreshToken === false) {
+    return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
+      code: '06',
+      description: 'please relogin',
+    }, [{}]))
+  }
+
+  const { email, } = verifiedRefreshToken
+  const accessToken = generateAccessTokenWithExpiration({ email, })
+  searchUser.authentication = {
+    token: accessToken,
+    refreshToken,
+  }
+  await searchUser.save((saveError) => {
+    if (saveError) {
+      return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
         code: '06',
-        description: 'You r not registered',
+        description: 'Failed to update token',
       }, [{}]))
     }
-
-    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (error, decoded) => {
-      if (error) {
-        // this should send forced logout
-        return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
-          code: '06',
-          description: 'please relogin',
-        }, [{}]))
-      }
-      console.log('decoded :: ', decoded)
-      const { email, } = decoded
-      const accessToken = generateAccessTokenWithExpiration({ email, })
-      if (token === accessToken) {
-        console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-      }
-      doc.authentication = {
-        token: accessToken,
-        refreshToken,
-      }
-      doc.save((saveError) => {
-        if (saveError) {
-          return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-            code: '06',
-            description: 'Failed to update token',
-          }, [{}]))
-        }
-        res.status(HTTP_STATUS_OK).json(responseFactory({
-          code: '00',
-          description: 'Refresh token success',
-        }, [{
-          accessToken: accessToken,
-          refreshToken,
-        }]))
-      })
-    })
+    return res.status(HTTP_STATUS_OK).json(responseFactory({
+      code: '00',
+      description: 'Refresh token success',
+    }, [{
+      accessToken: accessToken,
+      refreshToken,
+    }]))
   })
 })
 

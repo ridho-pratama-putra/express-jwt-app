@@ -3,6 +3,7 @@ const app = require('../src/authServer') // the express server
 const db = require('./db')
 const User = require('../src/models/user')
 const passport = require('passport')
+const jwt = require('jsonwebtoken')
 
 describe('AuthServer', () => {
   beforeAll(async () => {
@@ -18,6 +19,9 @@ describe('AuthServer', () => {
   })
 
   describe('/login', () => {
+    const sign = jest.spyOn(jwt, 'sign');
+    sign.mockImplementation(() => () => ({ signed: 'true' }));
+
     it('should return array of object contain token and refresh token', async () => {
       const user = new User({
         email: 'email@emal.com',
@@ -39,7 +43,7 @@ describe('AuthServer', () => {
   })
 
   describe('/token', () => {
-    it('should return 401 when no refresh token listed', async () => {
+    it('should return 401 when no refresh token', async () => {
       await request(app)
         .post('/token')
         .set('Authorization', 'Bearer invalid token') //idk still needed or not
@@ -48,8 +52,21 @@ describe('AuthServer', () => {
         })
         .expect(401)
     })
+    it('should return 401 when no user having the refresh token', async () => {
+      await request(app)
+        .post('/token')
+        .set('Authorization', 'Bearer invalid token') //idk still needed or not
+        .send({
+          refreshToken: 'this refresh token should not belongs to any one'
+        })
+        . expect(401)
+    })
 
     it('should return 200 when success refresh token', async () => {
+      const verify = jest.spyOn(jwt, 'verify');
+      verify.mockImplementation(() => () => () => ({ verified: 'true' }));
+      const sign = jest.spyOn(jwt, 'sign');
+      sign.mockImplementation(() => () => () => ({ signed: 'true' }));
       const user = new User({
         username: 'user A',
         email: 'email@emal.com',
