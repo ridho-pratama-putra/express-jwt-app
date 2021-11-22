@@ -1,14 +1,14 @@
-require('dotenv').config({ path: '/home/abc/Documents/express-jwt-app/.env' })
+require('dotenv').config({ path: '/home/abc/Documents/express-jwt-app/.env', })
 const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken')
 const User = require('./models/user')
 const responseFactory = require('./models/response')
-const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, HTTP_STATUS_CONFLICT } = require('./constants/HttpStatus')
+const { HTTP_STATUS_OK, HTTP_STATUS_CREATED, HTTP_STATUS_BAD_REQUEST, HTTP_STATUS_UNAUTHORIZED, HTTP_STATUS_INTERNAL_SERVER_ERROR, HTTP_STATUS_CONFLICT, } = require('./constants/HttpStatus')
 const passport = require('passport')
 const GoogleStrategy = require('passport-google-oauth20').Strategy
 const cors = require('cors')
-var morgan = require('morgan')
+const morgan = require('morgan')
 
 const originalSend = app.response.send
 app.response.send = function sendOverWrite (body) {
@@ -22,34 +22,34 @@ app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
 passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.CALLBACK_URL,
-  },
-  function (accessToken, refreshToken, profile, done) {
-    // passport callback function
-    // check if user already exists in our db with the given profile ID
-    User.findOne({
-      $or: [
-        { googleId: profile.id, },
-        { email: profile.emails[0].value, }
-      ],
-    }).then((currentUser) => {
-      if (currentUser && currentUser.googleId) { // registered with google account
-        done(null, currentUser)
-      } else if (currentUser && currentUser.email) { // registered manually
-        done(null, false, { message: '', })
-      } else { // if not, create a new user
-        new User({
-          displayName: profile.displayName,
-          googleId: profile.id,
-          email: profile.emails[0].value,
-        }).save().then((newUser) => {
-          done(null, newUser)
-        })
-      }
-    })
-  }
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.CALLBACK_URL,
+},
+function (accessToken, refreshToken, profile, done) {
+  // passport callback function
+  // check if user already exists in our db with the given profile ID
+  User.findOne({
+    $or: [
+      { googleId: profile.id, },
+      { email: profile.emails[0].value, }
+    ],
+  }).then((currentUser) => {
+    if (currentUser && currentUser.googleId) { // registered with google account
+      done(null, currentUser)
+    } else if (currentUser && currentUser.email) { // registered manually
+      done(null, false, { message: '', })
+    } else { // if not, create a new user
+      new User({
+        displayName: profile.displayName,
+        googleId: profile.id,
+        email: profile.emails[0].value,
+      }).save().then((newUser) => {
+        done(null, newUser)
+      })
+    }
+  })
+}
 ))
 
 app.get('/auth/google', passport.authenticate('google', {
@@ -65,7 +65,7 @@ app.get('/failed', (req, res) => {
 
 app.get('/auth/google/redirect', passport.authenticate('google', {
   session: false,
-  failureRedirect: '/failed'
+  failureRedirect: '/failed',
 }), (req, res) => {
   const { user, } = req
   const { email, } = user
@@ -81,7 +81,6 @@ app.get('/auth/google/redirect', passport.authenticate('google', {
         code: '06',
         description: 'Database error',
       }, [{}]))
-
     }
     res.cookie('accessToken', accessToken)
     res.cookie('refreshToken', refreshToken)
@@ -90,7 +89,7 @@ app.get('/auth/google/redirect', passport.authenticate('google', {
 })
 
 app.post('/internal-account', (req, res) => {
-  const { email } = req.body
+  const { email, } = req.body
   User.findOne({ email: email, }).then((currentUser) => {
     if (currentUser && currentUser.googleId && !currentUser.password) {
       return res.status(HTTP_STATUS_OK).json(responseFactory({
@@ -111,7 +110,7 @@ app.post('/internal-account', (req, res) => {
   })
 })
 
-app.post('/token', (req, res) => {
+app.post('/token', async (req, res) => {
   const refreshToken = req.body.refreshToken
   const authHeader = req.headers.authorization
   if (authHeader === undefined || !authHeader.startsWith('Bearer ')) {
@@ -127,9 +126,9 @@ app.post('/token', (req, res) => {
     }, [{}]))
   }
 
-  let token = authHeader && authHeader.split(' ')[1].trim()
+  const token = authHeader && authHeader.split(' ')[1].trim()
 
-  User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
+  await User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
         code: '06',
@@ -137,8 +136,8 @@ app.post('/token', (req, res) => {
       }, [{}]))
     }
 
-    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (err, decoded) => {
-      if (err) {
+    jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (error, decoded) => {
+      if (error) {
         // this should send forced logout
         return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
           code: '06',
@@ -146,17 +145,17 @@ app.post('/token', (req, res) => {
         }, [{}]))
       }
       console.log('decoded :: ', decoded)
-      const {email} =decoded
-      const accessToken = generateAccessTokenWithExpiration({email})
+      const { email, } = decoded
+      const accessToken = generateAccessTokenWithExpiration({ email, })
       if (token === accessToken) {
-        console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+        console.log('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
       }
       doc.authentication = {
         token: accessToken,
         refreshToken,
       }
-      doc.save((err, doc) => {
-        if (err) {
+      doc.save((saveError) => {
+        if (saveError) {
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
             description: 'Failed to update token',
@@ -175,7 +174,7 @@ app.post('/token', (req, res) => {
 })
 
 app.delete('/logout', (req, res) => {
-  let token, authHeader = req.headers.authorization
+  let token; const authHeader = req.headers.authorization
   if (authHeader.startsWith('Bearer ')) {
     token = authHeader.substring(7, authHeader.length)
   } else {
@@ -185,7 +184,7 @@ app.delete('/logout', (req, res) => {
     }, [{}]))
   }
 
-  User.findOne({ 'authentication.refreshToken': token }, (err, doc) => {
+  User.findOne({ 'authentication.refreshToken': token, }, (err, doc) => {
     if (err || doc === null) {
       return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
         code: '06',
@@ -197,8 +196,8 @@ app.delete('/logout', (req, res) => {
       token: null,
       refreshToken: null,
     }
-    doc.save((err, doc) => {
-      if (err) {
+    doc.save((errSave) => {
+      if (errSave) {
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
           description: 'Failed to logout',
@@ -230,8 +229,8 @@ app.post('/login', (req, res) => {
       }, [{}]))
     }
 
-    doc.comparePassword(password, (err, isMatch) => {
-      if (err) {
+    doc.comparePassword(password, (errCompare, isMatch) => {
+      if (errCompare) {
         return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
           code: '06',
           description: 'Failed to login',
@@ -250,8 +249,8 @@ app.post('/login', (req, res) => {
         token: accessToken,
         refreshToken,
       }
-      doc.save((err, doc) => {
-        if (err) {
+      doc.save((errSave) => {
+        if (errSave) {
           return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
             code: '06',
             description: 'Failed to update token',
@@ -292,10 +291,10 @@ app.post('/register', async (req, res) => {
 })
 
 app.get('/', (req, res) => {
-  let authHeader = req.headers.authorization
-  let token = authHeader && authHeader.split(' ')[1].trim()
+  const authHeader = req.headers.authorization
+  const token = authHeader && authHeader.split(' ')[1].trim()
   let isJWTValid = true
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err) => {
     if (err) {
       isJWTValid = false
     }
