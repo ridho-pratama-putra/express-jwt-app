@@ -126,7 +126,23 @@ app.post('/token', async (req, res) => {
     }, [{}]))
   }
 
-  const searchUser = await User.findOne({ 'authentication.refreshToken': refreshToken, }, (err, doc) => {
+  const verifiedRefreshToken = await jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (error, decoded) => {
+    if (error) {
+      return false
+    }
+    return decoded
+  })
+
+  if (verifiedRefreshToken === false) {
+    return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
+      code: '06',
+      description: 'please relogin',
+    }, [{}]))
+  }
+
+  const { email, } = verifiedRefreshToken
+
+  const searchUser = await User.findOne({ email: email, }, (err, doc) => {
     if (err) {
       return false
     }
@@ -147,21 +163,6 @@ app.post('/token', async (req, res) => {
     }, [{}]))
   }
 
-  const verifiedRefreshToken = await jwt.verify(refreshToken, process.env.REFRESH_ACCESS_TOKEN_SECRET, (error, decoded) => {
-    if (error) {
-      return false
-    }
-    return decoded
-  })
-
-  if (verifiedRefreshToken === false) {
-    return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
-      code: '06',
-      description: 'please relogin',
-    }, [{}]))
-  }
-
-  const { email, } = verifiedRefreshToken
   const accessToken = generateAccessTokenWithExpiration({ email, })
   searchUser.authentication = {
     token: accessToken,
@@ -181,44 +182,6 @@ app.post('/token', async (req, res) => {
       accessToken: accessToken,
       refreshToken,
     }]))
-  })
-})
-
-app.delete('/logout', (req, res) => {
-  let token; const authHeader = req.headers.authorization
-  if (authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7, authHeader.length)
-  } else {
-    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
-      code: '06',
-      description: 'Unautorized',
-    }, [{}]))
-  }
-
-  User.findOne({ 'authentication.refreshToken': token, }, (err, doc) => {
-    if (err || doc === null) {
-      return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
-        code: '06',
-        description: 'token not found',
-      }, [{}]))
-    }
-
-    doc.authentication = {
-      token: null,
-      refreshToken: null,
-    }
-    doc.save((errSave) => {
-      if (errSave) {
-        return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-          code: '06',
-          description: 'Failed to logout',
-        }, [{}]))
-      }
-      return res.status(HTTP_STATUS_OK).json(responseFactory({
-        code: '00',
-        description: 'Logout success',
-      }, [{}]))
-    })
   })
 })
 

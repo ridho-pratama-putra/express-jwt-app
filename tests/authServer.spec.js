@@ -46,39 +46,27 @@ describe('AuthServer', () => {
     it('should return 401 when no refresh token', async () => {
       await request(app)
         .post('/token')
-        .set('Authorization', 'Bearer invalid token') //idk still needed or not
+        .set('Authorization', 'Bearer invalid token')
         .send({
           refreshToken: null
         })
         .expect(401)
     })
-    it('should return 401 when no user having the refresh token', async () => {
-      await request(app)
-        .post('/token')
-        .set('Authorization', 'Bearer invalid token') //idk still needed or not
-        .send({
-          refreshToken: 'this refresh token should not belongs to any one'
-        })
-        . expect(401)
-    })
 
     it('should return 200 when success refresh token', async () => {
       const verify = jest.spyOn(jwt, 'verify');
-      verify.mockImplementation(() => () => () => ({ verified: 'true' }));
+      verify.mockImplementation(() => ({ email: 'email@emal.com' }));
       const sign = jest.spyOn(jwt, 'sign');
-      sign.mockImplementation(() => () => () => ({ signed: 'true' }));
+      sign.mockImplementation(() => ({ signed: 'true' }));
       const user = new User({
         username: 'user A',
         email: 'email@emal.com',
         password: 'password',
-        authentication: {
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
-        }
       })
       await user.save()
       await request(app)
         .post('/token')
-        .set('Authorization', 'Bearer expired token') //idk still needed or not
+        .set('Authorization', 'Bearer expired token')
         .send({
           refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
@@ -88,6 +76,25 @@ describe('AuthServer', () => {
           expect(response.body.result[0].refreshToken).not.toBe(null)
         })
     })
+
+    it('should return 500 when verify token return false', async () => {
+      const verify = jest.spyOn(jwt, 'verify');
+      verify.mockImplementation(() => false);
+      const user = new User({
+        username: 'user A',
+        email: 'email@emal.com',
+        password: 'password',
+      })
+      await user.save()
+      await request(app)
+        .post('/token')
+        .set('Authorization', 'Bearer expired token')
+        .send({
+          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
+        })
+        .expect(500)
+    })
+
     it('should return unauthorized when called without bearer authorized header', async () => {
       const user = new User({
         username: 'user A',
@@ -100,7 +107,7 @@ describe('AuthServer', () => {
       await user.save()
       await request(app)
         .post('/token')
-        .set('Authorization', 'expired token') //idk still needed or not
+        .set('Authorization', 'expired token')
         .send({
           refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
@@ -123,35 +130,6 @@ describe('AuthServer', () => {
           refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
         })
         .expect(401)
-    })
-  })
-
-  describe('/logout', () => {
-    it('should return 401 when request doesnt contain Bearer Authorization', async () => {
-      await request(app)
-        .delete('/logout').set('Authorization', 'true token')
-        .expect(401)
-    })
-
-    it('should return 401 when no user having the token', async () => {
-      await request(app)
-        .delete('/logout').set('Authorization', 'Bearer invalid token')
-        .expect(401)
-    })
-
-    it('should success logout when any user having the token', async () => {
-      const user = new User({
-        username: 'userName',
-        email: 'email@emal.com',
-        password: 'password',
-        authentication: {
-          refreshToken: 'true token'
-        }
-      })
-      await user.save()
-      await request(app)
-        .delete('/logout').set('Authorization', 'Bearer true token')
-        .expect(200)
     })
   })
 
