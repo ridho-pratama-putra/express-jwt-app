@@ -71,10 +71,6 @@ app.get('/auth/google/redirect', passport.authenticate('google', {
   const { email, } = user
   const accessToken = generateAccessTokenWithExpiration({ email, })
   const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
-  user.authentication = {
-    token: accessToken,
-    refreshToken,
-  }
   user.save((err, doc) => {
     if (err) {
       return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
@@ -164,25 +160,19 @@ app.post('/token', async (req, res) => {
   }
 
   const accessToken = generateAccessTokenWithExpiration({ email, })
-  searchUser.authentication = {
-    token: accessToken,
-    refreshToken,
+  if (saveError) {
+    return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
+      code: '06',
+      description: 'Failed to update token',
+    }, [{}]))
   }
-  await searchUser.save((saveError) => {
-    if (saveError) {
-      return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-        code: '06',
-        description: 'Failed to update token',
-      }, [{}]))
-    }
-    return res.status(HTTP_STATUS_OK).json(responseFactory({
-      code: '00',
-      description: 'Refresh token success',
-    }, [{
-      accessToken: accessToken,
-      refreshToken,
-    }]))
-  })
+  return res.status(HTTP_STATUS_OK).json(responseFactory({
+    code: '00',
+    description: 'Refresh token success',
+  }, [{
+    accessToken: accessToken,
+    refreshToken,
+  }]))
 })
 
 function generateAccessTokenWithExpiration (email) {
@@ -219,25 +209,14 @@ app.post('/login', (req, res) => {
 
       const accessToken = generateAccessTokenWithExpiration({ email, })
       const refreshToken = generateRefreshTokenWithExpiration({ email, })
-      doc.authentication = {
-        token: accessToken,
+
+      res.status(HTTP_STATUS_OK).json(responseFactory({
+        code: '00',
+        description: 'Success',
+      }, [{
+        accessToken,
         refreshToken,
-      }
-      doc.save((errSave) => {
-        if (errSave) {
-          return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-            code: '06',
-            description: 'Failed to update token',
-          }, [{}]))
-        }
-        res.status(HTTP_STATUS_OK).json(responseFactory({
-          code: '00',
-          description: 'Success',
-        }, [{
-          accessToken,
-          refreshToken,
-        }]))
-      })
+      }]))
     })
   })
 })

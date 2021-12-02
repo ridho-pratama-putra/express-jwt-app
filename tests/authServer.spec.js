@@ -100,9 +100,6 @@ describe('AuthServer', () => {
         username: 'user A',
         email: 'email@emal.com',
         password: 'password',
-        authentication: {
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
-        }
       })
       await user.save()
       await request(app)
@@ -119,9 +116,6 @@ describe('AuthServer', () => {
         username: 'user A',
         email: 'email@emal.com',
         password: 'password',
-        authentication: {
-          refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoidXNlciBBIiwiaWF0IjoxNjI3MzEwOTYxfQ.QAETcsieJblDV2jZ2seg4iZEKjcWfAlYQcRHGamDKoc'
-        }
       })
       await user.save()
       await request(app)
