@@ -160,12 +160,6 @@ app.post('/token', async (req, res) => {
   }
 
   const accessToken = generateAccessTokenWithExpiration({ email, })
-  if (saveError) {
-    return res.status(HTTP_STATUS_BAD_REQUEST).json(responseFactory({
-      code: '06',
-      description: 'Failed to update token',
-    }, [{}]))
-  }
   return res.status(HTTP_STATUS_OK).json(responseFactory({
     code: '00',
     description: 'Refresh token success',
