@@ -193,4 +193,24 @@ describe('AuthServer', () => {
         .expect(200)
     })
   })
+
+  describe('/user/access-token/:token', () => {
+    it('should return success when given access token is invalid', async () => {
+      const verify = jest.spyOn(jwt, 'verify');
+      verify.mockImplementation(() => false);
+      const res = await request(app)
+        .get('/user/access-token/:token').send()
+        .expect(200)
+      expect(res.body.status.description).toEqual('Access Token Expired')
+    })
+
+    it('should return success when given access token is valid', async () => {
+      const verify = jest.spyOn(jwt, 'verify');
+      verify.mockImplementation(() => {decoded: 'email@rmail.com'});
+      const res = await request(app)
+        .get('/user/access-token/:token').send()
+        .expect(200)
+      expect(res.body.status.description).toEqual('Access Token Valid')
+    })
+  })
 })

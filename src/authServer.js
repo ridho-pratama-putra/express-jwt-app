@@ -237,6 +237,28 @@ app.post('/user', async (req, res) => {
   })
 })
 
+app.get('/user/access-token/:token', async (req, res) => {
+  const { token, } = req.params
+  const verifiedAccessToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+    if (error) {
+      return false
+    }
+    return decoded
+  })
+
+  if (verifiedAccessToken === false) {
+    return res.status(HTTP_STATUS_OK).json(responseFactory({
+      code: '06',
+      description: 'Access Token Expired',
+    }, [{}]))
+  }
+
+  return res.status(HTTP_STATUS_OK).json(responseFactory({
+    code: '00',
+    description: 'Access Token Valid',
+  }, [{}]))
+})
+
 app.get('/', (req, res) => {
   const authHeader = req.headers.authorization
   const token = authHeader && authHeader.split(' ')[1].trim()
