@@ -177,7 +177,7 @@ function generateRefreshTokenWithExpiration (email) {
   return jwt.sign(email, process.env.REFRESH_ACCESS_TOKEN_SECRET, { expiresIn: '1d', })
 }
 
-app.post('/login', (req, res) => {
+app.post('/authentication', (req, res) => {
   const { email, password, } = req.body
   User.findOne({ email, }, (err, doc) => {
     if (err || doc === null) {
@@ -215,7 +215,7 @@ app.post('/login', (req, res) => {
   })
 })
 
-app.post('/register', async (req, res) => {
+app.post('/user', async (req, res) => {
   const user = new User({
     email: req.body.email,
     password: req.body.password,
