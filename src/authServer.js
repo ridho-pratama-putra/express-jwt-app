@@ -243,7 +243,7 @@ app.get('/user/access-token/:token', async (req, res) => {
     if (error) {
       return false
     }
-    return decoded
+    return true
   })
 
   if (verifiedAccessToken === false) {
