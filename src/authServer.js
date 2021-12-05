@@ -239,7 +239,13 @@ app.post('/user', async (req, res) => {
 
 app.get('/user/access-token', async (req, res) => {
   const authHeader = req.headers.authorization
-  const token = authHeader && authHeader.split(' ')[1].trim()
+  if (!authHeader) {
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
+      code: '06',
+      description: 'Authentication needed',
+    }, [{}]))
+  }
+  const token = authHeader.split(' ')[1].trim()
   const verifiedAccessToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error) => {
     if (error) {
       return false

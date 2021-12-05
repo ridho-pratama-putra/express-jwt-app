@@ -195,7 +195,7 @@ describe('AuthServer', () => {
   })
 
   describe('/user/access-token/:token', () => {
-    it('should return success when given access token is invalid', async () => {
+    it('should return unauthorized when given access token is invalid', async () => {
       const verify = jest.spyOn(jwt, 'verify');
       verify.mockImplementation(() => false);
       const res = await request(app)
@@ -215,6 +215,16 @@ describe('AuthServer', () => {
         .send()
         .expect(200)
       expect(res.body.status.description).toEqual('Access Token Valid')
+    })
+
+    it('should unauthorized success when not including authentication header', async () => {
+      const verify = jest.spyOn(jwt, 'verify');
+      verify.mockImplementation(() => false);
+      const res = await request(app)
+        .get('/user/access-token')
+        .send()
+        .expect(401)
+      expect(res.body.status.description).toEqual('Authentication needed')
     })
   })
 })
