@@ -242,7 +242,7 @@ app.get('/user/access-token', async (req, res) => {
   if (!authHeader) {
     return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
       code: '06',
-      description: 'Authentication needed',
+      description: 'Authorization needed',
     }, [{}]))
   }
   const token = authHeader.split(' ')[1].trim()

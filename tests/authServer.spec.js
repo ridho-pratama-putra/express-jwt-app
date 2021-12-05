@@ -224,7 +224,7 @@ describe('AuthServer', () => {
         .get('/user/access-token')
         .send()
         .expect(401)
-      expect(res.body.status.description).toEqual('Authentication needed')
+      expect(res.body.status.description).toEqual('Authorization needed')
     })
   })
 })
