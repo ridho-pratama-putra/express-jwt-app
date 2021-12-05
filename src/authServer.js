@@ -237,9 +237,10 @@ app.post('/user', async (req, res) => {
   })
 })
 
-app.get('/user/access-token/:token', async (req, res) => {
-  const { token, } = req.params
-  const verifiedAccessToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error, decoded) => {
+app.get('/user/access-token', async (req, res) => {
+  const authHeader = req.headers.authorization
+  const token = authHeader && authHeader.split(' ')[1].trim()
+  const verifiedAccessToken = await jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (error) => {
     if (error) {
       return false
     }
@@ -247,7 +248,7 @@ app.get('/user/access-token/:token', async (req, res) => {
   })
 
   if (verifiedAccessToken === false) {
-    return res.status(HTTP_STATUS_OK).json(responseFactory({
+    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
       code: '06',
       description: 'Access Token Expired',
     }, [{}]))
@@ -259,25 +260,4 @@ app.get('/user/access-token/:token', async (req, res) => {
   }, [{}]))
 })
 
-app.get('/', (req, res) => {
-  const authHeader = req.headers.authorization
-  const token = authHeader && authHeader.split(' ')[1].trim()
-  let isJWTValid = true
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err) => {
-    if (err) {
-      isJWTValid = false
-    }
-  })
-  if (isJWTValid) {
-    return res.status(HTTP_STATUS_OK).json(responseFactory({
-      code: '00',
-      description: 'Content retrieved',
-    }, [{}]))
-  } else {
-    return res.status(HTTP_STATUS_UNAUTHORIZED).json(responseFactory({
-      code: '06',
-      description: 'Your jwt invalid',
-    }, [{}]))
-  }
-})
 module.exports = app

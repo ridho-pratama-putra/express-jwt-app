@@ -199,8 +199,10 @@ describe('AuthServer', () => {
       const verify = jest.spyOn(jwt, 'verify');
       verify.mockImplementation(() => false);
       const res = await request(app)
-        .get('/user/access-token/:token').send()
-        .expect(200)
+        .get('/user/access-token')
+        .set('Authorization', 'Bearer invalid token')
+        .send()
+        .expect(401)
       expect(res.body.status.description).toEqual('Access Token Expired')
     })
 
@@ -208,7 +210,9 @@ describe('AuthServer', () => {
       const verify = jest.spyOn(jwt, 'verify');
       verify.mockImplementation(() => {decoded: 'email@rmail.com'});
       const res = await request(app)
-        .get('/user/access-token/:token').send()
+        .get('/user/access-token')
+        .set('Authorization', 'Bearer valid token')
+        .send()
         .expect(200)
       expect(res.body.status.description).toEqual('Access Token Valid')
     })
