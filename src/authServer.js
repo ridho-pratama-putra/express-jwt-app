@@ -52,7 +52,7 @@ function (accessToken, refreshToken, profile, done) {
 }
 ))
 
-app.get('/auth/google', passport.authenticate('google', {
+app.get('/authentication/google', passport.authenticate('google', {
   scope: ['profile', 'email'],
 }))
 
@@ -63,7 +63,7 @@ app.get('/failed', (req, res) => {
   }, [{}]))
 })
 
-app.get('/auth/google/redirect', passport.authenticate('google', {
+app.get('/authentication/google/redirect', passport.authenticate('google', {
   session: false,
   failureRedirect: '/failed',
 }), (req, res) => {
@@ -71,17 +71,9 @@ app.get('/auth/google/redirect', passport.authenticate('google', {
   const { email, } = user
   const accessToken = generateAccessTokenWithExpiration({ email, })
   const refreshToken = jwt.sign({ email, }, process.env.REFRESH_ACCESS_TOKEN_SECRET)
-  user.save((err, doc) => {
-    if (err) {
-      return res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json(responseFactory({
-        code: '06',
-        description: 'Database error',
-      }, [{}]))
-    }
-    res.cookie('accessToken', accessToken)
-    res.cookie('refreshToken', refreshToken)
-    res.redirect('http://localhost:3000/')
-  })
+  res.cookie('accessToken', accessToken)
+  res.cookie('refreshToken', refreshToken)
+  res.redirect('http://localhost:3000/')
 })
 
 app.post('/internal-account', (req, res) => {
