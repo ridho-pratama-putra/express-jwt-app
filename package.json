@@ -36,9 +36,6 @@
     "nodemon": "^2.0.12",
     "supertest": "^6.1.4"
   },
-  "jest": {
-    "verbose": true
-  },
   "eslintIgnore": [
     "*.spec.js"
   ]
