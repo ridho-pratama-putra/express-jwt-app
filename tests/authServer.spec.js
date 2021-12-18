@@ -30,10 +30,10 @@ describe('AuthServer', () => {
       await user.save()
 
       await request(app)
-        .post('/login').send({
+        .post('/authentication').send({
           email: 'email@emal.com',
           password: 'userA'
-        }).expect('Content-Type', 'application/json; charset=utf-8')
+        })
         .expect(200)
         .then((response) => {
           expect(response.body.result[0].accessToken).not.toBe(null)
@@ -127,7 +127,7 @@ describe('AuthServer', () => {
     })
   })
 
-  describe('/register', () => {
+  describe('/user', () => {
     it('should return 400 failed to create account when record already exist', async () => {
       const user = new User({
         email: 'email@emal.com',
@@ -135,7 +135,7 @@ describe('AuthServer', () => {
       })
       await user.save()
       const res = await request(app)
-        .post('/register').send({
+        .post('/user').send({
           email: 'email@emal.com',
           password: 'password'
         })
@@ -146,7 +146,7 @@ describe('AuthServer', () => {
 
     it('should return 201 when success create record', async () => {
       const res = await request(app)
-        .post('/register').send({
+        .post('/user').send({
           email: 'email@emal.com',
           password: 'password'
         })

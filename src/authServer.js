@@ -21,36 +21,36 @@ app.use(morgan(':date[iso] :remote-addr :method :url :status :body :response - :
 app.use(express.json())
 app.use(passport.initialize())
 app.use(cors())
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: process.env.CALLBACK_URL,
-},
-function (accessToken, refreshToken, profile, done) {
-  // passport callback function
-  // check if user already exists in our db with the given profile ID
-  User.findOne({
-    $or: [
-      { googleId: profile.id, },
-      { email: profile.emails[0].value, }
-    ],
-  }).then((currentUser) => {
-    if (currentUser && currentUser.googleId) { // registered with google account
-      done(null, currentUser)
-    } else if (currentUser && currentUser.email) { // registered manually
-      done(null, false, { message: '', })
-    } else { // if not, create a new user
-      new User({
-        displayName: profile.displayName,
-        googleId: profile.id,
-        email: profile.emails[0].value,
-      }).save().then((newUser) => {
-        done(null, newUser)
-      })
-    }
-  })
-}
-))
+// passport.use(new GoogleStrategy({
+//   clientID: process.env.GOOGLE_CLIENT_ID,
+//   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+//   callbackURL: process.env.CALLBACK_URL,
+// },
+// function (accessToken, refreshToken, profile, done) {
+//   // passport callback function
+//   // check if user already exists in our db with the given profile ID
+//   User.findOne({
+//     $or: [
+//       { googleId: profile.id, },
+//       { email: profile.emails[0].value, }
+//     ],
+//   }).then((currentUser) => {
+//     if (currentUser && currentUser.googleId) { // registered with google account
+//       done(null, currentUser)
+//     } else if (currentUser && currentUser.email) { // registered manually
+//       done(null, false, { message: '', })
+//     } else { // if not, create a new user
+//       new User({
+//         displayName: profile.displayName,
+//         googleId: profile.id,
+//         email: profile.emails[0].value,
+//       }).save().then((newUser) => {
+//         done(null, newUser)
+//       })
+//     }
+//   })
+// }
+// ))
 
 app.get('/auth/google', passport.authenticate('google', {
   scope: ['profile', 'email'],

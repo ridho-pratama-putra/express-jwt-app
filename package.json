@@ -4,7 +4,7 @@
   "description": "jwt lesson",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test jest --watchAll=false --detectOpenHandles --runInBand",
+    "test": "set NODE_ENV=test&& jest --watchAll=false --detectOpenHandles --runInBand",
     "devApp": "nodemon src/app.js",
     "devAuth": "nodemon src/auth.js",
     "lint": "eslint . --ext .js",
